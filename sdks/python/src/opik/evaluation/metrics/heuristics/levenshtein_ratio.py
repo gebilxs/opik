@@ -1,7 +1,6 @@
-from typing import Any
+from typing import Any, Optional
 
-import Levenshtein
-
+import rapidfuzz.distance.Indel
 from .. import base_metric, score_result
 
 
@@ -21,6 +20,7 @@ class LevenshteinRatio(base_metric.BaseMetric):
         case_sensitive: Whether the comparison should be case-sensitive. Defaults to False.
         name: The name of the metric. Defaults to "levenshtein_ratio_metric".
         track: Whether to track the metric. Defaults to True.
+        project_name: Optional project name to track the metric in for the cases when there are no parent span/trace to inherit project name from.
 
     Example:
         >>> from opik.evaluation.metrics import LevenshteinRatio
@@ -35,10 +35,12 @@ class LevenshteinRatio(base_metric.BaseMetric):
         case_sensitive: bool = False,
         name: str = "levenshtein_ratio_metric",
         track: bool = True,
+        project_name: Optional[str] = None,
     ):
         super().__init__(
             name=name,
             track=track,
+            project_name=project_name,
         )
 
         self._case_sensitive = case_sensitive
@@ -61,6 +63,5 @@ class LevenshteinRatio(base_metric.BaseMetric):
         value = output if self._case_sensitive else output.lower()
         reference = reference if self._case_sensitive else reference.lower()
 
-        score = Levenshtein.ratio(value, reference)
-
+        score = rapidfuzz.distance.Indel.normalized_similarity(value, reference)
         return score_result.ScoreResult(value=score, name=self.name)

@@ -1,10 +1,6 @@
 import React, { ForwardRefExoticComponent, RefAttributes } from "react";
 import { HeaderContext } from "@tanstack/react-table";
-import {
-  COLUMN_TYPE,
-  CUSTOM_HEADER_ICON,
-  HeaderIconType,
-} from "@/types/shared";
+import { COLUMN_TYPE, HeaderIconType } from "@/types/shared";
 import {
   Text,
   Hash,
@@ -19,6 +15,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import HeaderWrapper from "@/components/shared/DataTableHeaders/HeaderWrapper";
 import useSortableHeader from "@/components/shared/DataTableHeaders/useSortableHeader";
+import ExplainerIcon from "@/components/shared/ExplainerIcon/ExplainerIcon";
 
 const COLUMN_TYPE_MAP: Record<
   HeaderIconType,
@@ -34,7 +31,7 @@ const COLUMN_TYPE_MAP: Record<
   [COLUMN_TYPE.dictionary]: Braces,
   [COLUMN_TYPE.numberDictionary]: PenLine,
   [COLUMN_TYPE.cost]: Coins,
-  [CUSTOM_HEADER_ICON.GUARDRAILS]: Construction,
+  [COLUMN_TYPE.guardrails]: Construction,
 };
 
 const TypeHeader = <TData,>(context: HeaderContext<TData, unknown>) => {
@@ -44,6 +41,7 @@ const TypeHeader = <TData,>(context: HeaderContext<TData, unknown>) => {
     headerCheckbox,
     type: columnType,
     iconType,
+    explainer,
   } = column.columnDef.meta ?? {};
 
   const type = iconType ?? columnType;
@@ -51,6 +49,7 @@ const TypeHeader = <TData,>(context: HeaderContext<TData, unknown>) => {
 
   const { className, onClickHandler, renderSort } = useSortableHeader({
     column,
+    withSeparator: Boolean(explainer),
   });
 
   return (
@@ -76,6 +75,7 @@ const TypeHeader = <TData,>(context: HeaderContext<TData, unknown>) => {
       )}
       {Boolean(Icon) && <Icon className="size-3.5 shrink-0 text-slate-300" />}
       <span className="truncate">{header}</span>
+      {explainer && <ExplainerIcon {...explainer} />}
       {renderSort()}
     </HeaderWrapper>
   );

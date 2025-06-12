@@ -53,9 +53,11 @@ jobs:
             else
               BASE_VERSION=$(cat version.txt)
               BRANCH_NAME="${{ github.ref_name }}"
-              if [[ "${BRANCH_NAME}" == "main" ]]
-              then
+              if [[ "${BRANCH_NAME}" == "main" ]]; then
                 VERSION=${BASE_VERSION}-${{ github.run_number }}
+              elif [[ "${BRANCH_NAME}" =~ ^hotfix/.* ]]; then
+                # Special handling for hotfix branches
+                VERSION="${BASE_VERSION}-hotfix.${{ github.run_number }}"
               else
                 # Normalize branch name
                 fixedBranchName=$(echo "${BRANCH_NAME}" | sed 's/origin\///; s/\//-/g; s/_/-/g; s/.*/\L&/')
@@ -67,7 +69,6 @@ jobs:
                   done
                 fi
                 VERSION="${BASE_VERSION}.${fixedBranchName}-${{ github.run_number }}"
-                
               fi
             fi
             echo "version=${VERSION}" | tee -a $GITHUB_OUTPUT
@@ -116,9 +117,22 @@ jobs:
       comet_build_args: ""
       is_release: ${{ inputs.is_release || false }}
 
+  build-guardrails-backend:
+    needs:
+      - set-version
+    uses: ./.github/workflows/build_and_push_docker.yaml
+    with:
+      image: "opik-guardrails-backend"
+      version: ${{needs.set-version.outputs.version}}
+      build_from: ${{needs.set-version.outputs.build_from}}
+      build_comet_image: false
+      comet_build_args: ""
+      is_release: ${{ inputs.is_release || false }}
+
   build-frontend:
     needs:
       - set-version
+    secrets: inherit
     uses: ./.github/workflows/build_and_push_docker.yaml
     with:
       image: "opik-frontend"

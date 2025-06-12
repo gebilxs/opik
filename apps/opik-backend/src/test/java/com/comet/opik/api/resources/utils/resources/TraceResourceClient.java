@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
+import static com.comet.opik.api.TraceThread.TraceThreadPage;
 import static com.comet.opik.api.resources.utils.TestUtils.toURLEncodedQueryParam;
 import static com.comet.opik.infrastructure.auth.RequestContext.WORKSPACE_HEADER;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -157,16 +158,21 @@ public class TraceResourceClient extends BaseCommentResourceClient {
     }
 
     public void updateTrace(UUID id, TraceUpdate traceUpdate, String apiKey, String workspaceName) {
-        try (var actualResponse = client.target(RESOURCE_PATH.formatted(baseURI))
+        try (var actualResponse = updateTrace(id, traceUpdate, apiKey, workspaceName, HttpStatus.SC_NO_CONTENT)) {
+            assertThat(actualResponse.hasEntity()).isFalse();
+        }
+    }
+
+    public Response updateTrace(
+            UUID id, TraceUpdate traceUpdate, String apiKey, String workspaceName, int expectedStatus) {
+        var actualResponse = client.target(RESOURCE_PATH.formatted(baseURI))
                 .path(id.toString())
                 .request()
                 .header(HttpHeaders.AUTHORIZATION, apiKey)
                 .header(WORKSPACE_HEADER, workspaceName)
-                .method(HttpMethod.PATCH, Entity.json(traceUpdate))) {
-
-            assertThat(actualResponse.getStatusInfo().getStatusCode()).isEqualTo(HttpStatus.SC_NO_CONTENT);
-            assertThat(actualResponse.hasEntity()).isFalse();
-        }
+                .method(HttpMethod.PATCH, Entity.json(traceUpdate));
+        assertThat(actualResponse.getStatusInfo().getStatusCode()).isEqualTo(expectedStatus);
+        return actualResponse;
     }
 
     public List<List<FeedbackScoreBatchItem>> createMultiValueScores(List<String> multipleValuesFeedbackScores,
@@ -221,6 +227,24 @@ public class TraceResourceClient extends BaseCommentResourceClient {
                         .projectId(projectId).build()))) {
 
             assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+        }
+    }
+
+    public TraceThreadPage getTraceThreads(UUID projectId, String apiKey, String workspaceName,
+            List<SortingField> sortingFields) {
+        try (var response = client.target(RESOURCE_PATH.formatted(baseURI))
+                .path("threads")
+                .queryParam("project_id", projectId)
+                .queryParam("sorting", URLEncoder.encode(JsonUtils.writeValueAsString(sortingFields),
+                        StandardCharsets.UTF_8))
+                .request()
+                .header(HttpHeaders.AUTHORIZATION, apiKey)
+                .header(WORKSPACE_HEADER, workspaceName)
+                .get()) {
+
+            assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+            assertThat(response.hasEntity()).isTrue();
+            return response.readEntity(TraceThreadPage.class);
         }
     }
 

@@ -2,11 +2,14 @@ package com.comet.opik.api.resources.utils.traces;
 
 import com.comet.opik.api.ProjectStats.ProjectStatItem;
 import com.comet.opik.api.Trace;
+import com.comet.opik.api.TraceThread;
 import com.comet.opik.api.resources.utils.DurationUtils;
 import com.comet.opik.api.resources.utils.StatsUtils;
 import jakarta.ws.rs.core.Response;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static com.comet.opik.api.resources.utils.CommentAssertionUtils.assertComments;
@@ -17,7 +20,9 @@ public class TraceAssertions {
 
     public static final String[] IGNORED_FIELDS_TRACES = {"projectId", "projectName", "createdAt",
             "lastUpdatedAt", "feedbackScores", "createdBy", "lastUpdatedBy", "totalEstimatedCost", "spanCount",
-            "duration", "comments", "threadId", "guardrailsValidations"};
+            "llmSpanCount", "duration", "comments", "threadId", "guardrailsValidations"};
+
+    public static final String[] IGNORED_FIELDS_THREADS = {"createdAt", "lastUpdatedAt", "createdBy", "lastUpdatedBy"};
 
     private static final String[] IGNORED_FIELDS_SCORES = {"createdAt", "lastUpdatedAt", "createdBy", "lastUpdatedBy"};
 
@@ -53,26 +58,51 @@ public class TraceAssertions {
         for (int i = 0; i < actualTraces.size(); i++) {
             var actualTrace = actualTraces.get(i);
             var expectedTrace = expectedTraces.get(i);
+
+            if (expectedTrace.startTime() != null && expectedTrace.endTime() != null
+                    && expectedTrace.duration() != null) {
+                expectedTrace = expectedTrace.toBuilder()
+                        .duration(DurationUtils.getDurationInMillisWithSubMilliPrecision(expectedTrace.startTime(),
+                                expectedTrace.endTime()))
+                        .build();
+            }
+
             assertIgnoredFields(actualTrace, expectedTrace, user);
         }
     }
 
-    public static void assertIgnoredFields(Trace actualTrace, Trace expectedTrace, String user) {
+    private static void assertIgnoredFields(Trace actualTrace, Trace expectedTrace, String user) {
         assertThat(actualTrace.projectId()).isNotNull();
         assertThat(actualTrace.projectName()).isNull();
-        assertThat(actualTrace.createdAt()).isAfter(expectedTrace.createdAt());
-        assertThat(actualTrace.lastUpdatedAt()).isAfter(expectedTrace.lastUpdatedAt());
-        assertThat(actualTrace.createdBy()).isEqualTo(user);
-        assertThat(actualTrace.lastUpdatedBy()).isEqualTo(user);
+
+        if (actualTrace.createdAt() != null) {
+            assertThat(actualTrace.createdAt()).isAfter(expectedTrace.createdAt());
+        }
+
+        if (actualTrace.lastUpdatedAt() != null) {
+            if (expectedTrace.lastUpdatedAt() != null) {
+                assertThat(actualTrace.lastUpdatedAt())
+                        // Some JVMs can resolve higher than microseconds, such as nanoseconds in the Ubuntu AMD64 JVM
+                        .isAfterOrEqualTo(expectedTrace.lastUpdatedAt().truncatedTo(ChronoUnit.MICROS));
+            } else {
+                assertThat(actualTrace.lastUpdatedAt()).isCloseTo(Instant.now(), within(2, ChronoUnit.SECONDS));
+            }
+        }
+
+        if (actualTrace.createdBy() != null) {
+            assertThat(actualTrace.createdBy()).isEqualTo(user);
+        }
+
+        if (actualTrace.lastUpdatedBy() != null) {
+            assertThat(actualTrace.lastUpdatedBy()).isEqualTo(user);
+        }
+
         assertThat(actualTrace.threadId()).isEqualTo(expectedTrace.threadId());
 
-        var expected = DurationUtils.getDurationInMillisWithSubMilliPrecision(
-                expectedTrace.startTime(), expectedTrace.endTime());
-
-        if (actualTrace.duration() == null || expected == null) {
-            assertThat(actualTrace.duration()).isEqualTo(expected);
+        if (actualTrace.duration() == null || expectedTrace.duration() == null) {
+            assertThat(actualTrace.duration()).isEqualTo(expectedTrace.duration());
         } else {
-            assertThat(actualTrace.duration()).isEqualTo(expected, within(0.001));
+            assertThat(actualTrace.duration()).isEqualTo(expectedTrace.duration(), within(0.001));
         }
 
         assertThat(actualTrace.feedbackScores())
@@ -83,9 +113,10 @@ public class TraceAssertions {
                 .isEqualTo(expectedTrace.feedbackScores());
 
         if (expectedTrace.feedbackScores() != null) {
+            Instant lastUpdatedAt = expectedTrace.lastUpdatedAt();
             actualTrace.feedbackScores().forEach(feedbackScore -> {
-                assertThat(feedbackScore.createdAt()).isAfter(expectedTrace.createdAt());
-                assertThat(feedbackScore.lastUpdatedAt()).isAfter(expectedTrace.lastUpdatedAt());
+                assertThat(feedbackScore.createdAt()).isAfter(lastUpdatedAt);
+                assertThat(feedbackScore.lastUpdatedAt()).isAfter(lastUpdatedAt);
                 assertThat(feedbackScore.createdBy()).isEqualTo(user);
                 assertThat(feedbackScore.lastUpdatedBy()).isEqualTo(user);
             });
@@ -94,9 +125,11 @@ public class TraceAssertions {
         if (actualTrace.comments() != null) {
             assertComments(expectedTrace.comments(), actualTrace.comments());
 
+            Instant lastUpdatedAt = actualTrace.lastUpdatedAt();
+
             actualTrace.comments().forEach(comment -> {
-                assertThat(comment.createdAt()).isAfter(actualTrace.createdAt());
-                assertThat(comment.lastUpdatedAt()).isAfter(actualTrace.lastUpdatedAt());
+                assertThat(comment.createdAt()).isAfter(lastUpdatedAt);
+                assertThat(comment.lastUpdatedAt()).isAfter(lastUpdatedAt);
                 assertThat(comment.createdBy()).isEqualTo(user);
                 assertThat(comment.lastUpdatedBy()).isEqualTo(user);
             });
@@ -116,5 +149,14 @@ public class TraceAssertions {
         assertThat(actualPage.page()).isEqualTo(page);
         assertThat(actualPage.size()).isEqualTo(expectedPageSize);
         assertThat(actualPage.total()).isEqualTo(expectedTotal);
+    }
+
+    public static void assertThreads(List<TraceThread> expectedThreads, List<TraceThread> actualThreads) {
+        assertThat(actualThreads)
+                .usingRecursiveComparison()
+                .ignoringFields(IGNORED_FIELDS_THREADS)
+                .withComparatorForFields(StatsUtils::closeToEpsilonComparator, "duration")
+                .withComparatorForType(StatsUtils::bigDecimalComparator, BigDecimal.class)
+                .isEqualTo(expectedThreads);
     }
 }

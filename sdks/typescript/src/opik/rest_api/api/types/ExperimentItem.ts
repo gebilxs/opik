@@ -9,12 +9,16 @@ export interface ExperimentItem {
     experimentId: string;
     datasetItemId: string;
     traceId: string;
-    input?: OpikApi.JsonNode;
-    output?: OpikApi.JsonNode;
+    input?: OpikApi.JsonListString;
+    output?: OpikApi.JsonListString;
     feedbackScores?: OpikApi.FeedbackScore[];
     comments?: OpikApi.Comment[];
+    totalEstimatedCost?: number;
+    duration?: number;
+    usage?: Record<string, number>;
     createdAt?: Date;
     lastUpdatedAt?: Date;
     createdBy?: string;
     lastUpdatedBy?: string;
+    traceVisibilityMode?: OpikApi.ExperimentItemTraceVisibilityMode;
 }

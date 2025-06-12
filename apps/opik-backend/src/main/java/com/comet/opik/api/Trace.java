@@ -1,15 +1,19 @@
 package com.comet.opik.api;
 
+import com.comet.opik.api.validate.InRange;
+import com.comet.opik.api.validate.InRangeValidator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -25,22 +29,24 @@ import static com.comet.opik.utils.ValidationUtils.NULL_OR_NOT_BLANK;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record Trace(
         @JsonView( {
-                Trace.View.Public.class,
-                Trace.View.Write.class}) UUID id,
+                Trace.View.Public.class, Trace.View.Write.class}) UUID id,
         @JsonView({
                 Trace.View.Write.class}) @Pattern(regexp = NULL_OR_NOT_BLANK, message = "must not be blank") @Schema(description = "If null, the default project is used") String projectName,
         @JsonView({Trace.View.Public.class}) @Schema(accessMode = Schema.AccessMode.READ_ONLY) UUID projectId,
-        @JsonView({Trace.View.Public.class, Trace.View.Write.class}) @NotBlank String name,
-        @JsonView({Trace.View.Public.class, Trace.View.Write.class}) @NotNull Instant startTime,
-        @JsonView({Trace.View.Public.class, Trace.View.Write.class}) Instant endTime,
-        @JsonView({Trace.View.Public.class, Trace.View.Write.class}) JsonNode input,
-        @JsonView({Trace.View.Public.class, Trace.View.Write.class}) JsonNode output,
+        @JsonView({Trace.View.Public.class, Trace.View.Write.class}) String name,
+        @JsonView({Trace.View.Public.class, Trace.View.Write.class}) @NotNull @InRange Instant startTime,
+        @JsonView({Trace.View.Public.class, Trace.View.Write.class}) @InRange Instant endTime,
+        @Schema(implementation = JsonListString.class) @JsonView({Trace.View.Public.class,
+                Trace.View.Write.class}) JsonNode input,
+        @Schema(implementation = JsonListString.class) @JsonView({Trace.View.Public.class,
+                Trace.View.Write.class}) JsonNode output,
         @JsonView({Trace.View.Public.class, Trace.View.Write.class}) JsonNode metadata,
         @JsonView({Trace.View.Public.class, Trace.View.Write.class}) Set<String> tags,
         @JsonView({Trace.View.Public.class, Trace.View.Write.class}) ErrorInfo errorInfo,
         @JsonView({Trace.View.Public.class}) @Schema(accessMode = Schema.AccessMode.READ_ONLY) Map<String, Long> usage,
         @JsonView({Trace.View.Public.class}) @Schema(accessMode = Schema.AccessMode.READ_ONLY) Instant createdAt,
-        @JsonView({Trace.View.Public.class}) @Schema(accessMode = Schema.AccessMode.READ_ONLY) Instant lastUpdatedAt,
+        @JsonView({Trace.View.Public.class,
+                Trace.View.Write.class}) @InRange(before = InRangeValidator.MAX_ANALYTICS_DB) Instant lastUpdatedAt,
         @JsonView({Trace.View.Public.class}) @Schema(accessMode = Schema.AccessMode.READ_ONLY) String createdBy,
         @JsonView({Trace.View.Public.class}) @Schema(accessMode = Schema.AccessMode.READ_ONLY) String lastUpdatedBy,
         @JsonView({
@@ -55,8 +61,11 @@ public record Trace(
                 Trace.View.Public.class}) @Schema(accessMode = Schema.AccessMode.READ_ONLY) int spanCount,
         @JsonView({
                 Trace.View.Public.class}) @Schema(accessMode = Schema.AccessMode.READ_ONLY, description = "Duration in milliseconds as a decimal number to support sub-millisecond precision") Double duration,
-        @JsonView({Trace.View.Public.class, Trace.View.Write.class}) String threadId){
-    // TODO: add spanCount automation test
+        @JsonView({Trace.View.Public.class, Trace.View.Write.class}) String threadId,
+        @JsonView({
+                Trace.View.Public.class}) @Schema(accessMode = Schema.AccessMode.READ_ONLY) VisibilityMode visibilityMode,
+        @JsonView({
+                Trace.View.Public.class}) @Schema(accessMode = Schema.AccessMode.READ_ONLY) int llmSpanCount){
 
     @Builder(toBuilder = true)
     public record TracePage(
@@ -69,6 +78,38 @@ public record Trace(
         public static TracePage empty(int page, List<String> sortableBy) {
             return new TracePage(page, 0, 0, List.of(), sortableBy);
         }
+    }
+
+    @RequiredArgsConstructor
+    @Getter
+    public enum TraceField {
+
+        NAME("name"),
+        START_TIME("start_time"),
+        END_TIME("end_time"),
+        INPUT("input"),
+        OUTPUT("output"),
+        METADATA("metadata"),
+        TAGS("tags"),
+        ERROR_INFO("error_info"),
+        USAGE("usage"),
+        CREATED_AT("created_at"),
+        CREATED_BY("created_by"),
+        LAST_UPDATED_BY("last_updated_by"),
+        FEEDBACK_SCORES("feedback_scores"),
+        COMMENTS("comments"),
+        GUARDRAILS_VALIDATIONS("guardrails_validations"),
+        TOTAL_ESTIMATED_COST("total_estimated_cost"),
+        SPAN_COUNT("span_count"),
+        LLM_SPAN_COUNT("llm_span_count"),
+        DURATION("duration"),
+        THREAD_ID("thread_id"),
+        VISIBILITY_MODE("visibility_mode"),
+        ;
+
+        @JsonValue
+        private final String value;
+
     }
 
     public static class View {

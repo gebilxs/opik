@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ControlledTreeEnvironment,
   Tree,
@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import useDeepMemo from "@/hooks/useDeepMemo";
 import SearchInput from "@/components/shared/SearchInput/SearchInput";
 import NoData from "@/components/shared/NoData/NoData";
+import ExplainerIcon from "@/components/shared/ExplainerIcon/ExplainerIcon";
+import { EXPLAINER_ID, EXPLAINERS_MAP } from "@/constants/explainers";
 
 type SpanWithMetadata = Omit<Span, "type"> & {
   type: BASE_TRACE_DATA_TYPE;
@@ -42,6 +44,7 @@ type TraceTreeViewerProps = {
   spans?: Span[];
   rowId: string;
   onSelectRow: (id: string) => void;
+  isSpansLazyLoading: boolean;
 };
 
 const TraceTreeViewer: React.FunctionComponent<TraceTreeViewerProps> = ({
@@ -49,36 +52,40 @@ const TraceTreeViewer: React.FunctionComponent<TraceTreeViewerProps> = ({
   spans,
   rowId,
   onSelectRow,
+  isSpansLazyLoading,
 }) => {
   const [search, setSearch] = useState("");
   const traceSpans = useMemo(() => spans ?? [], [spans]);
-
-  const [expandedTraceSpans, setExpandedTraceSpans] = useState<TreeItemIndex[]>(
-    [],
-  );
-
-  const isAllExpended = traceSpans.length + 1 === expandedTraceSpans.length;
 
   const spanIds = useDeepMemo(() => {
     return traceSpans.map((chain: Span) => chain.id).sort();
   }, [traceSpans]);
 
-  const expendAll = useCallback(
-    (expand: boolean) => {
-      setExpandedTraceSpans(expand ? [trace.id, ...spanIds] : []);
-    },
+  const fullTreeList = useMemo(
+    () => [trace.id, ...spanIds],
     [trace.id, spanIds],
   );
 
-  const toggleExpandAll = useCallback(() => {
-    expendAll(!isAllExpended);
-  }, [expendAll, isAllExpended]);
+  const [collapsedTraceSpans, setCollapsedTraceSpans] = useState<
+    TreeItemIndex[]
+  >([]);
 
-  useEffect(() => {
-    expendAll(true);
-    // we want to expand all items in tree only in case the trace is changed
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trace.id, spanIds]);
+  const onExpandItem = useCallback((item: TreeItem<SpanWithMetadata>) => {
+    setCollapsedTraceSpans((prev) => prev.filter((i) => i !== item.index));
+  }, []);
+
+  const onCollapseItem = useCallback((item: TreeItem<SpanWithMetadata>) => {
+    setCollapsedTraceSpans((prev) => [...prev, item.index]);
+  }, []);
+
+  const expandedTraceSpans = useMemo(() => {
+    return fullTreeList.filter((id) => !collapsedTraceSpans.includes(id));
+  }, [collapsedTraceSpans, fullTreeList]);
+  const isAllExpanded = expandedTraceSpans.length === fullTreeList.length;
+
+  const toggleExpandAll = useCallback(() => {
+    setCollapsedTraceSpans(isAllExpanded ? fullTreeList : []);
+  }, [isAllExpanded, fullTreeList]);
 
   const noSearch = !search;
 
@@ -275,6 +282,12 @@ const TraceTreeViewer: React.FunctionComponent<TraceTreeViewerProps> = ({
       <div className="mt-4 min-w-[400px] max-w-full">
         <div className="mt-2 flex flex-row items-end gap-2 px-6">
           <div className="comet-title-s">Trace spans</div>
+          <ExplainerIcon
+            className="-ml-1 self-center"
+            {...EXPLAINERS_MAP[
+              EXPLAINER_ID.what_are_these_elements_in_the_tree
+            ]}
+          />
           <div className="comet-body-s pb-[3px] text-muted-slate">
             <div>{traceSpans.length} spans</div>
           </div>
@@ -286,6 +299,7 @@ const TraceTreeViewer: React.FunctionComponent<TraceTreeViewerProps> = ({
               setSearchText={setSearch}
               placeholder="Search by all fields"
               dimension="sm"
+              disabled={isSpansLazyLoading}
             ></SearchInput>
           </div>
           <div className="flex items-center gap-2">
@@ -296,7 +310,7 @@ const TraceTreeViewer: React.FunctionComponent<TraceTreeViewerProps> = ({
                 size="sm"
                 className="-mr-3"
               >
-                {isAllExpended ? "Collapse all" : "Expand all"}
+                {isAllExpanded ? "Collapse all" : "Expand all"}
               </Button>
             )}
           </div>
@@ -307,16 +321,8 @@ const TraceTreeViewer: React.FunctionComponent<TraceTreeViewerProps> = ({
             items={treeData}
             onFocusItem={(item) => onSelectRow(item.index as string)}
             viewState={viewState}
-            onExpandItem={(item) =>
-              setExpandedTraceSpans((prev) => [...prev, item.index])
-            }
-            onCollapseItem={(item) =>
-              setExpandedTraceSpans(
-                expandedTraceSpans.filter(
-                  (expandedItemIndex) => expandedItemIndex !== item.index,
-                ),
-              )
-            }
+            onExpandItem={onExpandItem}
+            onCollapseItem={onCollapseItem}
             renderDepthOffset={treeRenderers.renderDepthOffset}
             renderTreeContainer={treeRenderers.renderTreeContainer}
             renderItemsContainer={treeRenderers.renderItemsContainer}

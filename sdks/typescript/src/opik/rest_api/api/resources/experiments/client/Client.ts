@@ -54,11 +54,19 @@ export class Experiments {
      * @example
      *     await client.experiments.findExperiments()
      */
-    public async findExperiments(
+    public findExperiments(
         request: OpikApi.FindExperimentsRequest = {},
         requestOptions?: Experiments.RequestOptions,
-    ): Promise<OpikApi.ExperimentPagePublic> {
-        const { page, size, datasetId, name, datasetDeleted, promptId, sorting } = request;
+    ): core.HttpResponsePromise<OpikApi.ExperimentPagePublic> {
+        return core.HttpResponsePromise.fromPromise(this.__findExperiments(request, requestOptions));
+    }
+
+    private async __findExperiments(
+        request: OpikApi.FindExperimentsRequest = {},
+        requestOptions?: Experiments.RequestOptions,
+    ): Promise<core.WithRawResponse<OpikApi.ExperimentPagePublic>> {
+        const { page, size, datasetId, optimizationId, types, name, datasetDeleted, promptId, sorting, filters } =
+            request;
         const _queryParams: Record<string, string | string[] | object | object[] | null> = {};
         if (page != null) {
             _queryParams["page"] = page.toString();
@@ -70,6 +78,14 @@ export class Experiments {
 
         if (datasetId != null) {
             _queryParams["datasetId"] = datasetId;
+        }
+
+        if (optimizationId != null) {
+            _queryParams["optimization_id"] = optimizationId;
+        }
+
+        if (types != null) {
+            _queryParams["types"] = types;
         }
 
         if (name != null) {
@@ -86,6 +102,10 @@ export class Experiments {
 
         if (sorting != null) {
             _queryParams["sorting"] = sorting;
+        }
+
+        if (filters != null) {
+            _queryParams["filters"] = filters;
         }
 
         const _response = await core.fetcher({
@@ -116,22 +136,26 @@ export class Experiments {
             abortSignal: requestOptions?.abortSignal,
         });
         if (_response.ok) {
-            return serializers.ExperimentPagePublic.parseOrThrow(_response.body, {
-                unrecognizedObjectKeys: "passthrough",
-                allowUnrecognizedUnionMembers: true,
-                allowUnrecognizedEnumValues: true,
-                breadcrumbsPrefix: ["response"],
-            });
+            return {
+                data: serializers.ExperimentPagePublic.parseOrThrow(_response.body, {
+                    unrecognizedObjectKeys: "passthrough",
+                    allowUnrecognizedUnionMembers: true,
+                    allowUnrecognizedEnumValues: true,
+                    breadcrumbsPrefix: ["response"],
+                }),
+                rawResponse: _response.rawResponse,
+            };
         }
 
         if (_response.error.reason === "status-code") {
             switch (_response.error.statusCode) {
                 case 400:
-                    throw new OpikApi.BadRequestError(_response.error.body);
+                    throw new OpikApi.BadRequestError(_response.error.body, _response.rawResponse);
                 default:
                     throw new errors.OpikApiError({
                         statusCode: _response.error.statusCode,
                         body: _response.error.body,
+                        rawResponse: _response.rawResponse,
                     });
             }
         }
@@ -141,12 +165,14 @@ export class Experiments {
                 throw new errors.OpikApiError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.rawBody,
+                    rawResponse: _response.rawResponse,
                 });
             case "timeout":
                 throw new errors.OpikApiTimeoutError("Timeout exceeded when calling GET /v1/private/experiments.");
             case "unknown":
                 throw new errors.OpikApiError({
                     message: _response.error.errorMessage,
+                    rawResponse: _response.rawResponse,
                 });
         }
     }
@@ -162,10 +188,17 @@ export class Experiments {
      *         datasetName: "dataset_name"
      *     })
      */
-    public async createExperiment(
+    public createExperiment(
         request: OpikApi.ExperimentWrite,
         requestOptions?: Experiments.RequestOptions,
-    ): Promise<void> {
+    ): core.HttpResponsePromise<void> {
+        return core.HttpResponsePromise.fromPromise(this.__createExperiment(request, requestOptions));
+    }
+
+    private async __createExperiment(
+        request: OpikApi.ExperimentWrite,
+        requestOptions?: Experiments.RequestOptions,
+    ): Promise<core.WithRawResponse<void>> {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.baseUrl)) ??
@@ -194,13 +227,14 @@ export class Experiments {
             abortSignal: requestOptions?.abortSignal,
         });
         if (_response.ok) {
-            return;
+            return { data: undefined, rawResponse: _response.rawResponse };
         }
 
         if (_response.error.reason === "status-code") {
             throw new errors.OpikApiError({
                 statusCode: _response.error.statusCode,
                 body: _response.error.body,
+                rawResponse: _response.rawResponse,
             });
         }
 
@@ -209,12 +243,14 @@ export class Experiments {
                 throw new errors.OpikApiError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.rawBody,
+                    rawResponse: _response.rawResponse,
                 });
             case "timeout":
                 throw new errors.OpikApiTimeoutError("Timeout exceeded when calling POST /v1/private/experiments.");
             case "unknown":
                 throw new errors.OpikApiError({
                     message: _response.error.errorMessage,
+                    rawResponse: _response.rawResponse,
                 });
         }
     }
@@ -234,10 +270,17 @@ export class Experiments {
      *             }]
      *     })
      */
-    public async createExperimentItems(
+    public createExperimentItems(
         request: OpikApi.ExperimentItemsBatch,
         requestOptions?: Experiments.RequestOptions,
-    ): Promise<void> {
+    ): core.HttpResponsePromise<void> {
+        return core.HttpResponsePromise.fromPromise(this.__createExperimentItems(request, requestOptions));
+    }
+
+    private async __createExperimentItems(
+        request: OpikApi.ExperimentItemsBatch,
+        requestOptions?: Experiments.RequestOptions,
+    ): Promise<core.WithRawResponse<void>> {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.baseUrl)) ??
@@ -266,13 +309,14 @@ export class Experiments {
             abortSignal: requestOptions?.abortSignal,
         });
         if (_response.ok) {
-            return;
+            return { data: undefined, rawResponse: _response.rawResponse };
         }
 
         if (_response.error.reason === "status-code") {
             throw new errors.OpikApiError({
                 statusCode: _response.error.statusCode,
                 body: _response.error.body,
+                rawResponse: _response.rawResponse,
             });
         }
 
@@ -281,6 +325,7 @@ export class Experiments {
                 throw new errors.OpikApiError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.rawBody,
+                    rawResponse: _response.rawResponse,
                 });
             case "timeout":
                 throw new errors.OpikApiTimeoutError(
@@ -289,6 +334,7 @@ export class Experiments {
             case "unknown":
                 throw new errors.OpikApiError({
                     message: _response.error.errorMessage,
+                    rawResponse: _response.rawResponse,
                 });
         }
     }
@@ -304,10 +350,17 @@ export class Experiments {
      *         ids: ["ids"]
      *     })
      */
-    public async deleteExperimentItems(
+    public deleteExperimentItems(
         request: OpikApi.ExperimentItemsDelete,
         requestOptions?: Experiments.RequestOptions,
-    ): Promise<void> {
+    ): core.HttpResponsePromise<void> {
+        return core.HttpResponsePromise.fromPromise(this.__deleteExperimentItems(request, requestOptions));
+    }
+
+    private async __deleteExperimentItems(
+        request: OpikApi.ExperimentItemsDelete,
+        requestOptions?: Experiments.RequestOptions,
+    ): Promise<core.WithRawResponse<void>> {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.baseUrl)) ??
@@ -336,13 +389,14 @@ export class Experiments {
             abortSignal: requestOptions?.abortSignal,
         });
         if (_response.ok) {
-            return;
+            return { data: undefined, rawResponse: _response.rawResponse };
         }
 
         if (_response.error.reason === "status-code") {
             throw new errors.OpikApiError({
                 statusCode: _response.error.statusCode,
                 body: _response.error.body,
+                rawResponse: _response.rawResponse,
             });
         }
 
@@ -351,6 +405,7 @@ export class Experiments {
                 throw new errors.OpikApiError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.rawBody,
+                    rawResponse: _response.rawResponse,
                 });
             case "timeout":
                 throw new errors.OpikApiTimeoutError(
@@ -359,6 +414,7 @@ export class Experiments {
             case "unknown":
                 throw new errors.OpikApiError({
                     message: _response.error.errorMessage,
+                    rawResponse: _response.rawResponse,
                 });
         }
     }
@@ -366,7 +422,7 @@ export class Experiments {
     /**
      * Delete experiments by id
      *
-     * @param {OpikApi.ExperimentsDelete} request
+     * @param {OpikApi.DeleteIdsHolder} request
      * @param {Experiments.RequestOptions} requestOptions - Request-specific configuration.
      *
      * @example
@@ -374,10 +430,17 @@ export class Experiments {
      *         ids: ["ids"]
      *     })
      */
-    public async deleteExperimentsById(
-        request: OpikApi.ExperimentsDelete,
+    public deleteExperimentsById(
+        request: OpikApi.DeleteIdsHolder,
         requestOptions?: Experiments.RequestOptions,
-    ): Promise<void> {
+    ): core.HttpResponsePromise<void> {
+        return core.HttpResponsePromise.fromPromise(this.__deleteExperimentsById(request, requestOptions));
+    }
+
+    private async __deleteExperimentsById(
+        request: OpikApi.DeleteIdsHolder,
+        requestOptions?: Experiments.RequestOptions,
+    ): Promise<core.WithRawResponse<void>> {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.baseUrl)) ??
@@ -399,20 +462,21 @@ export class Experiments {
             },
             contentType: "application/json",
             requestType: "json",
-            body: serializers.ExperimentsDelete.jsonOrThrow(request, { unrecognizedObjectKeys: "strip" }),
+            body: serializers.DeleteIdsHolder.jsonOrThrow(request, { unrecognizedObjectKeys: "strip" }),
             timeoutMs: requestOptions?.timeoutInSeconds != null ? requestOptions.timeoutInSeconds * 1000 : 60000,
             maxRetries: requestOptions?.maxRetries,
             withCredentials: true,
             abortSignal: requestOptions?.abortSignal,
         });
         if (_response.ok) {
-            return;
+            return { data: undefined, rawResponse: _response.rawResponse };
         }
 
         if (_response.error.reason === "status-code") {
             throw new errors.OpikApiError({
                 statusCode: _response.error.statusCode,
                 body: _response.error.body,
+                rawResponse: _response.rawResponse,
             });
         }
 
@@ -421,6 +485,7 @@ export class Experiments {
                 throw new errors.OpikApiError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.rawBody,
+                    rawResponse: _response.rawResponse,
                 });
             case "timeout":
                 throw new errors.OpikApiTimeoutError(
@@ -429,6 +494,103 @@ export class Experiments {
             case "unknown":
                 throw new errors.OpikApiError({
                     message: _response.error.errorMessage,
+                    rawResponse: _response.rawResponse,
+                });
+        }
+    }
+
+    /**
+     * Record experiment items in bulk with traces, spans, and feedback scores. Maximum request size is 4MB.
+     *
+     * @param {OpikApi.ExperimentItemBulkUploadExperimentItemBulkWriteView} request
+     * @param {Experiments.RequestOptions} requestOptions - Request-specific configuration.
+     *
+     * @throws {@link OpikApi.BadRequestError}
+     * @throws {@link OpikApi.UnprocessableEntityError}
+     *
+     * @example
+     *     await client.experiments.experimentItemsBulk({
+     *         experimentName: "experiment_name",
+     *         datasetName: "dataset_name",
+     *         items: [{
+     *                 datasetItemId: "dataset_item_id"
+     *             }]
+     *     })
+     */
+    public experimentItemsBulk(
+        request: OpikApi.ExperimentItemBulkUploadExperimentItemBulkWriteView,
+        requestOptions?: Experiments.RequestOptions,
+    ): core.HttpResponsePromise<void> {
+        return core.HttpResponsePromise.fromPromise(this.__experimentItemsBulk(request, requestOptions));
+    }
+
+    private async __experimentItemsBulk(
+        request: OpikApi.ExperimentItemBulkUploadExperimentItemBulkWriteView,
+        requestOptions?: Experiments.RequestOptions,
+    ): Promise<core.WithRawResponse<void>> {
+        const _response = await core.fetcher({
+            url: urlJoin(
+                (await core.Supplier.get(this._options.baseUrl)) ??
+                    (await core.Supplier.get(this._options.environment)) ??
+                    environments.OpikApiEnvironment.Default,
+                "v1/private/experiments/items/bulk",
+            ),
+            method: "PUT",
+            headers: {
+                "Comet-Workspace":
+                    (await core.Supplier.get(this._options.workspaceName)) != null
+                        ? await core.Supplier.get(this._options.workspaceName)
+                        : undefined,
+                "X-Fern-Language": "JavaScript",
+                "X-Fern-Runtime": core.RUNTIME.type,
+                "X-Fern-Runtime-Version": core.RUNTIME.version,
+                ...(await this._getCustomAuthorizationHeaders()),
+                ...requestOptions?.headers,
+            },
+            contentType: "application/json",
+            requestType: "json",
+            body: serializers.ExperimentItemBulkUploadExperimentItemBulkWriteView.jsonOrThrow(request, {
+                unrecognizedObjectKeys: "strip",
+            }),
+            timeoutMs: requestOptions?.timeoutInSeconds != null ? requestOptions.timeoutInSeconds * 1000 : 60000,
+            maxRetries: requestOptions?.maxRetries,
+            withCredentials: true,
+            abortSignal: requestOptions?.abortSignal,
+        });
+        if (_response.ok) {
+            return { data: undefined, rawResponse: _response.rawResponse };
+        }
+
+        if (_response.error.reason === "status-code") {
+            switch (_response.error.statusCode) {
+                case 400:
+                    throw new OpikApi.BadRequestError(_response.error.body, _response.rawResponse);
+                case 422:
+                    throw new OpikApi.UnprocessableEntityError(_response.error.body, _response.rawResponse);
+                default:
+                    throw new errors.OpikApiError({
+                        statusCode: _response.error.statusCode,
+                        body: _response.error.body,
+                        rawResponse: _response.rawResponse,
+                    });
+            }
+        }
+
+        switch (_response.error.reason) {
+            case "non-json":
+                throw new errors.OpikApiError({
+                    statusCode: _response.error.statusCode,
+                    body: _response.error.rawBody,
+                    rawResponse: _response.rawResponse,
+                });
+            case "timeout":
+                throw new errors.OpikApiTimeoutError(
+                    "Timeout exceeded when calling PUT /v1/private/experiments/items/bulk.",
+                );
+            case "unknown":
+                throw new errors.OpikApiError({
+                    message: _response.error.errorMessage,
+                    rawResponse: _response.rawResponse,
                 });
         }
     }
@@ -442,10 +604,17 @@ export class Experiments {
      * @example
      *     await client.experiments.findFeedbackScoreNames()
      */
-    public async findFeedbackScoreNames(
+    public findFeedbackScoreNames(
         request: OpikApi.FindFeedbackScoreNamesRequest = {},
         requestOptions?: Experiments.RequestOptions,
-    ): Promise<string[]> {
+    ): core.HttpResponsePromise<string[]> {
+        return core.HttpResponsePromise.fromPromise(this.__findFeedbackScoreNames(request, requestOptions));
+    }
+
+    private async __findFeedbackScoreNames(
+        request: OpikApi.FindFeedbackScoreNamesRequest = {},
+        requestOptions?: Experiments.RequestOptions,
+    ): Promise<core.WithRawResponse<string[]>> {
         const { experimentIds } = request;
         const _queryParams: Record<string, string | string[] | object | object[] | null> = {};
         if (experimentIds != null) {
@@ -480,18 +649,22 @@ export class Experiments {
             abortSignal: requestOptions?.abortSignal,
         });
         if (_response.ok) {
-            return serializers.experiments.findFeedbackScoreNames.Response.parseOrThrow(_response.body, {
-                unrecognizedObjectKeys: "passthrough",
-                allowUnrecognizedUnionMembers: true,
-                allowUnrecognizedEnumValues: true,
-                breadcrumbsPrefix: ["response"],
-            });
+            return {
+                data: serializers.experiments.findFeedbackScoreNames.Response.parseOrThrow(_response.body, {
+                    unrecognizedObjectKeys: "passthrough",
+                    allowUnrecognizedUnionMembers: true,
+                    allowUnrecognizedEnumValues: true,
+                    breadcrumbsPrefix: ["response"],
+                }),
+                rawResponse: _response.rawResponse,
+            };
         }
 
         if (_response.error.reason === "status-code") {
             throw new errors.OpikApiError({
                 statusCode: _response.error.statusCode,
                 body: _response.error.body,
+                rawResponse: _response.rawResponse,
             });
         }
 
@@ -500,6 +673,7 @@ export class Experiments {
                 throw new errors.OpikApiError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.rawBody,
+                    rawResponse: _response.rawResponse,
                 });
             case "timeout":
                 throw new errors.OpikApiTimeoutError(
@@ -508,6 +682,7 @@ export class Experiments {
             case "unknown":
                 throw new errors.OpikApiError({
                     message: _response.error.errorMessage,
+                    rawResponse: _response.rawResponse,
                 });
         }
     }
@@ -523,10 +698,17 @@ export class Experiments {
      * @example
      *     await client.experiments.getExperimentById("id")
      */
-    public async getExperimentById(
+    public getExperimentById(
         id: string,
         requestOptions?: Experiments.RequestOptions,
-    ): Promise<OpikApi.ExperimentPublic> {
+    ): core.HttpResponsePromise<OpikApi.ExperimentPublic> {
+        return core.HttpResponsePromise.fromPromise(this.__getExperimentById(id, requestOptions));
+    }
+
+    private async __getExperimentById(
+        id: string,
+        requestOptions?: Experiments.RequestOptions,
+    ): Promise<core.WithRawResponse<OpikApi.ExperimentPublic>> {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.baseUrl)) ??
@@ -554,22 +736,26 @@ export class Experiments {
             abortSignal: requestOptions?.abortSignal,
         });
         if (_response.ok) {
-            return serializers.ExperimentPublic.parseOrThrow(_response.body, {
-                unrecognizedObjectKeys: "passthrough",
-                allowUnrecognizedUnionMembers: true,
-                allowUnrecognizedEnumValues: true,
-                breadcrumbsPrefix: ["response"],
-            });
+            return {
+                data: serializers.ExperimentPublic.parseOrThrow(_response.body, {
+                    unrecognizedObjectKeys: "passthrough",
+                    allowUnrecognizedUnionMembers: true,
+                    allowUnrecognizedEnumValues: true,
+                    breadcrumbsPrefix: ["response"],
+                }),
+                rawResponse: _response.rawResponse,
+            };
         }
 
         if (_response.error.reason === "status-code") {
             switch (_response.error.statusCode) {
                 case 404:
-                    throw new OpikApi.NotFoundError(_response.error.body);
+                    throw new OpikApi.NotFoundError(_response.error.body, _response.rawResponse);
                 default:
                     throw new errors.OpikApiError({
                         statusCode: _response.error.statusCode,
                         body: _response.error.body,
+                        rawResponse: _response.rawResponse,
                     });
             }
         }
@@ -579,12 +765,14 @@ export class Experiments {
                 throw new errors.OpikApiError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.rawBody,
+                    rawResponse: _response.rawResponse,
                 });
             case "timeout":
                 throw new errors.OpikApiTimeoutError("Timeout exceeded when calling GET /v1/private/experiments/{id}.");
             case "unknown":
                 throw new errors.OpikApiError({
                     message: _response.error.errorMessage,
+                    rawResponse: _response.rawResponse,
                 });
         }
     }
@@ -600,10 +788,17 @@ export class Experiments {
      * @example
      *     await client.experiments.getExperimentItemById("id")
      */
-    public async getExperimentItemById(
+    public getExperimentItemById(
         id: string,
         requestOptions?: Experiments.RequestOptions,
-    ): Promise<OpikApi.ExperimentItemPublic> {
+    ): core.HttpResponsePromise<OpikApi.ExperimentItemPublic> {
+        return core.HttpResponsePromise.fromPromise(this.__getExperimentItemById(id, requestOptions));
+    }
+
+    private async __getExperimentItemById(
+        id: string,
+        requestOptions?: Experiments.RequestOptions,
+    ): Promise<core.WithRawResponse<OpikApi.ExperimentItemPublic>> {
         const _response = await core.fetcher({
             url: urlJoin(
                 (await core.Supplier.get(this._options.baseUrl)) ??
@@ -631,22 +826,26 @@ export class Experiments {
             abortSignal: requestOptions?.abortSignal,
         });
         if (_response.ok) {
-            return serializers.ExperimentItemPublic.parseOrThrow(_response.body, {
-                unrecognizedObjectKeys: "passthrough",
-                allowUnrecognizedUnionMembers: true,
-                allowUnrecognizedEnumValues: true,
-                breadcrumbsPrefix: ["response"],
-            });
+            return {
+                data: serializers.ExperimentItemPublic.parseOrThrow(_response.body, {
+                    unrecognizedObjectKeys: "passthrough",
+                    allowUnrecognizedUnionMembers: true,
+                    allowUnrecognizedEnumValues: true,
+                    breadcrumbsPrefix: ["response"],
+                }),
+                rawResponse: _response.rawResponse,
+            };
         }
 
         if (_response.error.reason === "status-code") {
             switch (_response.error.statusCode) {
                 case 404:
-                    throw new OpikApi.NotFoundError(_response.error.body);
+                    throw new OpikApi.NotFoundError(_response.error.body, _response.rawResponse);
                 default:
                     throw new errors.OpikApiError({
                         statusCode: _response.error.statusCode,
                         body: _response.error.body,
+                        rawResponse: _response.rawResponse,
                     });
             }
         }
@@ -656,6 +855,7 @@ export class Experiments {
                 throw new errors.OpikApiError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.rawBody,
+                    rawResponse: _response.rawResponse,
                 });
             case "timeout":
                 throw new errors.OpikApiTimeoutError(
@@ -664,6 +864,7 @@ export class Experiments {
             case "unknown":
                 throw new errors.OpikApiError({
                     message: _response.error.errorMessage,
+                    rawResponse: _response.rawResponse,
                 });
         }
     }
@@ -671,10 +872,17 @@ export class Experiments {
     /**
      * Stream experiment items
      */
-    public async streamExperimentItems(
+    public streamExperimentItems(
         request: OpikApi.ExperimentItemStreamRequest,
         requestOptions?: Experiments.RequestOptions,
-    ): Promise<stream.Readable> {
+    ): core.HttpResponsePromise<stream.Readable> {
+        return core.HttpResponsePromise.fromPromise(this.__streamExperimentItems(request, requestOptions));
+    }
+
+    private async __streamExperimentItems(
+        request: OpikApi.ExperimentItemStreamRequest,
+        requestOptions?: Experiments.RequestOptions,
+    ): Promise<core.WithRawResponse<stream.Readable>> {
         const _response = await core.fetcher<stream.Readable>({
             url: urlJoin(
                 (await core.Supplier.get(this._options.baseUrl)) ??
@@ -704,13 +912,14 @@ export class Experiments {
             abortSignal: requestOptions?.abortSignal,
         });
         if (_response.ok) {
-            return _response.body;
+            return { data: _response.body, rawResponse: _response.rawResponse };
         }
 
         if (_response.error.reason === "status-code") {
             throw new errors.OpikApiError({
                 statusCode: _response.error.statusCode,
                 body: _response.error.body,
+                rawResponse: _response.rawResponse,
             });
         }
 
@@ -719,6 +928,7 @@ export class Experiments {
                 throw new errors.OpikApiError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.rawBody,
+                    rawResponse: _response.rawResponse,
                 });
             case "timeout":
                 throw new errors.OpikApiTimeoutError(
@@ -727,6 +937,7 @@ export class Experiments {
             case "unknown":
                 throw new errors.OpikApiError({
                     message: _response.error.errorMessage,
+                    rawResponse: _response.rawResponse,
                 });
         }
     }
@@ -734,10 +945,17 @@ export class Experiments {
     /**
      * Stream experiments
      */
-    public async streamExperiments(
+    public streamExperiments(
         request: OpikApi.ExperimentStreamRequestPublic,
         requestOptions?: Experiments.RequestOptions,
-    ): Promise<stream.Readable> {
+    ): core.HttpResponsePromise<stream.Readable> {
+        return core.HttpResponsePromise.fromPromise(this.__streamExperiments(request, requestOptions));
+    }
+
+    private async __streamExperiments(
+        request: OpikApi.ExperimentStreamRequestPublic,
+        requestOptions?: Experiments.RequestOptions,
+    ): Promise<core.WithRawResponse<stream.Readable>> {
         const _response = await core.fetcher<stream.Readable>({
             url: urlJoin(
                 (await core.Supplier.get(this._options.baseUrl)) ??
@@ -767,13 +985,14 @@ export class Experiments {
             abortSignal: requestOptions?.abortSignal,
         });
         if (_response.ok) {
-            return _response.body;
+            return { data: _response.body, rawResponse: _response.rawResponse };
         }
 
         if (_response.error.reason === "status-code") {
             throw new errors.OpikApiError({
                 statusCode: _response.error.statusCode,
                 body: _response.error.body,
+                rawResponse: _response.rawResponse,
             });
         }
 
@@ -782,6 +1001,7 @@ export class Experiments {
                 throw new errors.OpikApiError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.rawBody,
+                    rawResponse: _response.rawResponse,
                 });
             case "timeout":
                 throw new errors.OpikApiTimeoutError(
@@ -790,6 +1010,7 @@ export class Experiments {
             case "unknown":
                 throw new errors.OpikApiError({
                     message: _response.error.errorMessage,
+                    rawResponse: _response.rawResponse,
                 });
         }
     }

@@ -9,11 +9,11 @@ export interface Trace {
     /** If null, the default project is used */
     projectName?: string;
     projectId?: string;
-    name: string;
+    name?: string;
     startTime: Date;
     endTime?: Date;
-    input?: OpikApi.JsonNode;
-    output?: OpikApi.JsonNode;
+    input?: OpikApi.JsonListString;
+    output?: OpikApi.JsonListString;
     metadata?: OpikApi.JsonNode;
     tags?: string[];
     errorInfo?: OpikApi.ErrorInfo;
@@ -30,4 +30,6 @@ export interface Trace {
     /** Duration in milliseconds as a decimal number to support sub-millisecond precision */
     duration?: number;
     threadId?: string;
+    visibilityMode?: OpikApi.TraceVisibilityMode;
+    llmSpanCount?: number;
 }

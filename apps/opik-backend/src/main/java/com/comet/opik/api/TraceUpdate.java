@@ -1,5 +1,6 @@
 package com.comet.opik.api;
 
+import com.comet.opik.api.validate.InRange;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -20,9 +21,10 @@ import static com.comet.opik.utils.ValidationUtils.NULL_OR_NOT_BLANK;
 public record TraceUpdate(
         @Pattern(regexp = NULL_OR_NOT_BLANK, message = "must not be blank") @Schema(description = "If null and project_id not specified, Default Project is assumed") String projectName,
         @Schema(description = "If null and project_name not specified, Default Project is assumed") UUID projectId,
-        Instant endTime,
-        JsonNode input,
-        JsonNode output,
+        String name,
+        @InRange Instant endTime,
+        @Schema(implementation = JsonListString.class) JsonNode input,
+        @Schema(implementation = JsonListString.class) JsonNode output,
         JsonNode metadata,
         Set<String> tags,
         ErrorInfo errorInfo,

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   keepPreviousData,
   QueryFunctionContext,
@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import isUndefined from "lodash/isUndefined";
 import { Dataset, Experiment } from "@/types/datasets";
+import { Filters } from "@/types/filters";
 import useDatasetsList from "@/api/datasets/useDatasetsList";
 import useExperimentsList, {
   getExperimentsList,
@@ -15,11 +16,11 @@ import useExperimentsList, {
 } from "@/api/datasets/useExperimentsList";
 import useDatasetById from "@/api/datasets/useDatasetById";
 import { Sorting } from "@/types/sorting";
-
-export const DELETED_DATASET_ID = "deleted_dataset_id";
-export const DEFAULT_GROUPS_PER_PAGE = 5;
-export const DEFAULT_EXPERIMENTS_PER_GROUP = 25;
-export const GROUPING_COLUMN = "virtual_dataset_id";
+import {
+  DEFAULT_ITEMS_PER_GROUP,
+  DELETED_DATASET_ID,
+  GROUPING_COLUMN,
+} from "@/constants/grouping";
 
 export const GROUP_SORTING = [{ id: "last_created_experiment_at", desc: true }];
 
@@ -30,6 +31,7 @@ export type GroupedExperiment = {
 
 type UseGroupedExperimentsListParams = {
   workspaceName: string;
+  filters?: Filters;
   sorting?: Sorting;
   datasetId?: string;
   promptId?: string;
@@ -47,7 +49,6 @@ type UseGroupedExperimentsListResponse = {
     sortable_by: string[];
     total: number;
   };
-  datasetsData: Dataset[];
   isPending: boolean;
   refetch: (options?: RefetchOptions) => Promise<unknown>;
 };
@@ -56,7 +57,7 @@ const extractPageSize = (
   groupId: string,
   groupLimit?: Record<string, number>,
 ) => {
-  return groupLimit?.[groupId] ?? DEFAULT_EXPERIMENTS_PER_GROUP;
+  return groupLimit?.[groupId] ?? DEFAULT_ITEMS_PER_GROUP;
 };
 
 const wrapExperimentRow = (experiment: Experiment, dataset: Dataset) => {
@@ -69,10 +70,6 @@ const wrapExperimentRow = (experiment: Experiment, dataset: Dataset) => {
 
 const buildMoreRowId = (id: string) => {
   return `more_${id}`;
-};
-
-export const checkIsMoreRowId = (id: string) => {
-  return /^more_/.test(id);
 };
 
 const generateMoreRow = (dataset: Dataset) => {
@@ -101,6 +98,7 @@ export default function useGroupedExperimentsList(
   } = useExperimentsList(
     {
       workspaceName: params.workspaceName,
+      filters: params.filters,
       sorting: params.sorting,
       search: params.search,
       datasetDeleted: true,
@@ -177,6 +175,7 @@ export default function useGroupedExperimentsList(
     queries: datasetsIds.map((datasetId) => {
       const p: UseExperimentsListParams = {
         workspaceName: params.workspaceName,
+        filters: params.filters,
         sorting: params.sorting,
         search: params.search,
         datasetId,
@@ -307,13 +306,16 @@ export default function useGroupedExperimentsList(
   const isPending =
     (isFilteredByDataset ? isDatasetPending : isDatasetsPending) ||
     (experimentsResponse.length > 0 &&
-      experimentsResponse.every((r) => r.isPending) &&
-      data.content.length === 0);
+      experimentsResponse.some((r) => r.isPending));
+
+  const [isInitialPending, setIsInitialPending] = useState(true);
+  useEffect(() => {
+    setIsInitialPending((s) => (!isPending && s ? false : s));
+  }, [isPending]);
 
   return {
     data,
-    isPending,
+    isPending: isInitialPending,
     refetch,
-    datasetsData,
   } as UseGroupedExperimentsListResponse;
 }

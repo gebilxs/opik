@@ -1,6 +1,7 @@
 package com.comet.opik.domain.stats;
 
 import com.comet.opik.api.FeedbackScoreAverage;
+import com.comet.opik.api.PercentageValues;
 import com.comet.opik.api.ProjectStats;
 import io.r2dbc.spi.Row;
 
@@ -13,7 +14,6 @@ import java.util.stream.Stream;
 import static com.comet.opik.api.ProjectStats.AvgValueStat;
 import static com.comet.opik.api.ProjectStats.CountValueStat;
 import static com.comet.opik.api.ProjectStats.PercentageValueStat;
-import static com.comet.opik.api.ProjectStats.PercentageValues;
 import static java.util.stream.Collectors.toMap;
 
 public class StatsMapper {
@@ -21,12 +21,15 @@ public class StatsMapper {
     public static final String USAGE = "usage";
     public static final String FEEDBACK_SCORE = "feedback_scores";
     public static final String TOTAL_ESTIMATED_COST = "total_estimated_cost";
+    public static final String TOTAL_ESTIMATED_COST_AVG = "total_estimated_cost_avg";
+    public static final String TOTAL_ESTIMATED_COST_SUM = "total_estimated_cost_sum";
     public static final String DURATION = "duration";
     public static final String INPUT = "input";
     public static final String OUTPUT = "output";
     public static final String METADATA = "metadata";
     public static final String TAGS = "tags";
     public static final String TRACE_COUNT = "trace_count";
+    public static final String GUARDRAILS_FAILED_COUNT = "guardrails_failed_count";
 
     public static ProjectStats mapProjectStats(Row row, String entityCountLabel) {
 
@@ -45,12 +48,19 @@ public class StatsMapper {
                 .add(new CountValueStat(METADATA, row.get("metadata", Long.class)))
                 .add(new AvgValueStat(TAGS, row.get("tags", Double.class)));
 
-        BigDecimal totalEstimatedCost = row.get("total_estimated_cost_avg", BigDecimal.class);
-        if (totalEstimatedCost == null) {
-            totalEstimatedCost = BigDecimal.ZERO;
+        BigDecimal totalEstimatedCostAvg = row.get(TOTAL_ESTIMATED_COST_AVG, BigDecimal.class);
+        if (totalEstimatedCostAvg == null) {
+            totalEstimatedCostAvg = BigDecimal.ZERO;
         }
 
-        stats.add(new AvgValueStat(TOTAL_ESTIMATED_COST, totalEstimatedCost.doubleValue()));
+        stats.add(new AvgValueStat(TOTAL_ESTIMATED_COST, totalEstimatedCostAvg.doubleValue()));
+
+        BigDecimal totalEstimatedCostSum = row.get(TOTAL_ESTIMATED_COST_SUM, BigDecimal.class);
+        if (totalEstimatedCostSum == null) {
+            totalEstimatedCostSum = BigDecimal.ZERO;
+        }
+
+        stats.add(new AvgValueStat(TOTAL_ESTIMATED_COST_SUM, totalEstimatedCostSum.doubleValue()));
 
         Map<String, Double> usage = row.get(USAGE, Map.class);
         Map<String, Double> feedbackScores = row.get(FEEDBACK_SCORE, Map.class);
@@ -71,6 +81,13 @@ public class StatsMapper {
                             feedbackScores.get(key))));
         }
 
+        // spans cannot accept guardrails and therefore will not have guardrails_failed_count in the result set
+        if (row.getMetadata().contains("guardrails_failed_count")) {
+            Optional.ofNullable(row.get("guardrails_failed_count", Long.class)).ifPresent(
+                    guardrailsFailedCount -> stats
+                            .add(new CountValueStat(GUARDRAILS_FAILED_COUNT, guardrailsFailedCount)));
+        }
+
         return new ProjectStats(stats.build().toList());
     }
 
@@ -89,11 +106,19 @@ public class StatsMapper {
                 .orElse(null);
     }
 
-    public static Double getStatsTotalEstimatedCost(Map<String, ?> stats) {
+    private static Double getStatAsDouble(Map<String, ?> stats, String key) {
         return Optional.ofNullable(stats)
-                .map(map -> map.get(TOTAL_ESTIMATED_COST))
+                .map(map -> map.get(key))
                 .map(v -> (Double) v)
                 .orElse(null);
+    }
+
+    public static Double getStatsTotalEstimatedCostSum(Map<String, ?> stats) {
+        return getStatAsDouble(stats, TOTAL_ESTIMATED_COST_SUM);
+    }
+
+    public static Double getStatsTotalEstimatedCost(Map<String, ?> stats) {
+        return getStatAsDouble(stats, TOTAL_ESTIMATED_COST);
     }
 
     public static List<FeedbackScoreAverage> getStatsFeedbackScores(Map<String, ?> stats) {
@@ -116,6 +141,12 @@ public class StatsMapper {
     public static Long getStatsTraceCount(Map<String, Object> projectStats) {
         return Optional.ofNullable(projectStats)
                 .map(map -> (Long) map.get(TRACE_COUNT))
+                .orElse(null);
+    }
+
+    public static Long getStatsGuardrailsFailedCount(Map<String, Object> projectStats) {
+        return Optional.ofNullable(projectStats)
+                .map(map -> (Long) map.get(GUARDRAILS_FAILED_COUNT))
                 .orElse(null);
     }
 }

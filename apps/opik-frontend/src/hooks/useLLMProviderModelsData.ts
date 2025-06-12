@@ -751,6 +751,18 @@ export const PROVIDER_MODELS: PROVIDER_MODELS_TYPE = {
       label: "meta-llama/llama-guard-3-8b",
     },
     {
+      value: PROVIDER_MODEL_TYPE.META_LLAMA_LLAMA_GUARD_4_12B,
+      label: "meta-llama/llama-guard-4-12b",
+    },
+    {
+      value: PROVIDER_MODEL_TYPE.META_LLAMA_LLAMA_4_MAVERICK,
+      label: "meta-llama/llama-4-maverick",
+    },
+    {
+      value: PROVIDER_MODEL_TYPE.META_LLAMA_LLAMA_4_SCOUT,
+      label: "meta-llama/llama-4-scout",
+    },
+    {
       value: PROVIDER_MODEL_TYPE.MICROSOFT_PHI_3_5_MINI_128K_INSTRUCT,
       label: "microsoft/phi-3.5-mini-128k-instruct",
     },
@@ -1048,8 +1060,17 @@ export const PROVIDER_MODELS: PROVIDER_MODELS_TYPE = {
       label: "openai/gpt-4",
     },
     {
+      value: PROVIDER_MODEL_TYPE.OPENAI_GPT_4_ONLINE,
+      label: "openai/gpt-4:online",
+    },
+    {
       value: PROVIDER_MODEL_TYPE.OPENAI_GPT_4O,
       label: "openai/gpt-4o",
+      structuredOutput: true,
+    },
+    {
+      value: PROVIDER_MODEL_TYPE.OPENAI_GPT_4O_ONLINE,
+      label: "openai/gpt-4o:online",
       structuredOutput: true,
     },
     {
@@ -1300,6 +1321,10 @@ export const PROVIDER_MODELS: PROVIDER_MODELS_TYPE = {
       label: "qwen/qwen-vl-plus:free",
     },
     {
+      value: PROVIDER_MODEL_TYPE.QWEN_QWQ_32B,
+      label: "qwen/qwq-32b",
+    },
+    {
       value: PROVIDER_MODEL_TYPE.QWEN_QWQ_32B_PREVIEW,
       label: "qwen/qwq-32b-preview",
       structuredOutput: true,
@@ -1486,6 +1511,39 @@ export const PROVIDER_MODELS: PROVIDER_MODELS_TYPE = {
     },
   ],
 
+  [PROVIDER_TYPE.VERTEX_AI]: [
+    {
+      value: PROVIDER_MODEL_TYPE.VERTEX_AI_GEMINI_2_5_PRO_PREVIEW_04_17,
+      label: "Gemini 2.5 Pro Preview 04.17",
+      structuredOutput: true,
+    },
+    {
+      value: PROVIDER_MODEL_TYPE.VERTEX_AI_GEMINI_2_5_PRO_PREVIEW_05_06,
+      label: "Gemini 2.5 Pro Preview 05.06",
+      structuredOutput: true,
+    },
+    {
+      value: PROVIDER_MODEL_TYPE.GEMINI_2_5_PRO_PREVIEW_03_25,
+      label: "Gemini 2.5 Pro Preview 03.25",
+      structuredOutput: true,
+    },
+    {
+      value: PROVIDER_MODEL_TYPE.GEMINI_2_5_PRO_EXP_03_25,
+      label: "Gemini 2.5 Pro Exp 03.25",
+      structuredOutput: true,
+    },
+    {
+      value: PROVIDER_MODEL_TYPE.VERTEX_AI_GEMINI_2_0_FLASH,
+      label: "Gemini 2.0 Flash",
+      structuredOutput: true,
+    },
+    {
+      value: PROVIDER_MODEL_TYPE.VERTEX_AI_GEMINI_2_0_FLASH_LITE,
+      label: "Gemini 2.0 Flash Lite",
+      structuredOutput: true,
+    },
+  ],
+
   [PROVIDER_TYPE.OLLAMA]: [
     // the list will be full filled base on data in localstorage
   ],
@@ -1530,7 +1588,9 @@ const useLLMProviderModelsData = () => {
       lastPickedModel: PROVIDER_MODEL_TYPE | "",
       setupProviders: PROVIDER_TYPE[],
       preferredProvider?: PROVIDER_TYPE | "",
+      config: { structuredOutput?: boolean } = {},
     ) => {
+      const { structuredOutput = false } = config;
       const lastPickedModelProvider = calculateModelProvider(lastPickedModel);
 
       const isLastPickedModelValid =
@@ -1545,20 +1605,33 @@ const useLLMProviderModelsData = () => {
         preferredProvider ?? getDefaultProviderKey(setupProviders);
 
       if (provider) {
-        if (PROVIDERS[provider].locationType === PROVIDER_LOCATION_TYPE.local) {
+        if (
+          PROVIDERS[provider].locationType === PROVIDER_LOCATION_TYPE.local &&
+          !structuredOutput
+        ) {
           return (
             (first(
               (getLocalAIProviderData(provider)?.models || "").split(","),
             )?.trim() as PROVIDER_MODEL_TYPE) ?? ""
           );
-        } else {
-          return PROVIDERS[provider].defaultModel;
+        } else if (
+          PROVIDERS[provider].locationType === PROVIDER_LOCATION_TYPE.cloud
+        ) {
+          if (structuredOutput) {
+            return (
+              first(
+                getProviderModels()[provider].filter((m) => m.structuredOutput),
+              )?.value ?? ""
+            );
+          } else {
+            return PROVIDERS[provider].defaultModel;
+          }
         }
       }
 
       return "";
     },
-    [calculateModelProvider, getLocalAIProviderData],
+    [calculateModelProvider, getLocalAIProviderData, getProviderModels],
   );
 
   return {

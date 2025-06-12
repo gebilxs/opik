@@ -24,6 +24,8 @@ import { formatCost } from "@/lib/money";
 import TraceDataViewerActionsPanel from "@/components/pages-shared/traces/TraceDetailsPanel/TraceDataViewer/TraceDataViewerActionsPanel";
 import { LastSectionValue } from "../TraceDetailsPanel";
 import TraceDataViewerHeader from "./TraceDataViewerHeader";
+import { EXPLAINER_ID, EXPLAINERS_MAP } from "@/constants/explainers";
+import ExplainerIcon from "@/components/shared/ExplainerIcon/ExplainerIcon";
 
 type TraceDataViewerProps = {
   data: Trace | Span;
@@ -33,6 +35,7 @@ type TraceDataViewerProps = {
   spanId?: string;
   lastSection?: LastSectionValue | null;
   setLastSection: (v: LastSectionValue) => void;
+  isSpansLazyLoading: boolean;
 };
 
 const TraceDataViewer: React.FunctionComponent<TraceDataViewerProps> = ({
@@ -43,15 +46,14 @@ const TraceDataViewer: React.FunctionComponent<TraceDataViewerProps> = ({
   spanId,
   lastSection,
   setLastSection,
+  isSpansLazyLoading,
 }) => {
   const type = get(data, "type", TRACE_TYPE_FOR_TREE);
   const tokens = data.usage?.total_tokens;
 
-  const agentGraphData = get(
-    trace,
-    ["metadata", METADATA_AGENT_GRAPH_KEY],
-    null,
-  );
+  const agentGraphData =
+    get(data, ["metadata", METADATA_AGENT_GRAPH_KEY], null) ||
+    get(trace, ["metadata", METADATA_AGENT_GRAPH_KEY], null);
   const hasAgentGraph = Boolean(agentGraphData);
   const hasError = Boolean(data.error_info);
 
@@ -63,6 +65,9 @@ const TraceDataViewer: React.FunctionComponent<TraceDataViewerProps> = ({
     (tab === "graph" && !hasAgentGraph) || (tab === "error" && !hasError)
       ? "input"
       : tab;
+
+  const isSpanInputOutputLoading =
+    type !== TRACE_TYPE_FOR_TREE && isSpansLazyLoading;
 
   return (
     <div className="size-full max-w-full overflow-auto p-6">
@@ -151,6 +156,10 @@ const TraceDataViewer: React.FunctionComponent<TraceDataViewerProps> = ({
             </TabsTrigger>
             <TabsTrigger variant="underline" value="feedback_scores">
               Feedback scores
+              <ExplainerIcon
+                className="ml-1"
+                {...EXPLAINERS_MAP[EXPLAINER_ID.what_are_feedback_scores]}
+              />
             </TabsTrigger>
             <TabsTrigger variant="underline" value="metadata">
               Metadata
@@ -167,7 +176,7 @@ const TraceDataViewer: React.FunctionComponent<TraceDataViewerProps> = ({
             )}
           </TabsList>
           <TabsContent value="input">
-            <InputOutputTab data={data} />
+            <InputOutputTab data={data} isLoading={isSpanInputOutputLoading} />
           </TabsContent>
           <TabsContent value="feedback_scores">
             <FeedbackScoreTab data={data} traceId={traceId} spanId={spanId} />

@@ -17,8 +17,13 @@ export const COLUMN_NAME_ID = "name";
 export const COLUMN_ACTIONS_ID = "actions";
 export const COLUMN_METADATA_ID = "metadata";
 export const COLUMN_FEEDBACK_SCORES_ID = "feedback_scores";
+export const COLUMN_USAGE_ID = "usage";
 export const COLUMN_COMMENTS_ID = "comments";
+export const COLUMN_GUARDRAILS_ID = "guardrails";
 export const COLUMN_CREATED_AT_ID = "created_at";
+export const COLUMN_DATASET_ID = "dataset";
+
+export const COLUMN_GUARDRAIL_STATISTIC_ID = "guardrails_failed_count";
 
 export enum COLUMN_TYPE {
   string = "string",
@@ -29,6 +34,7 @@ export enum COLUMN_TYPE {
   dictionary = "dictionary",
   numberDictionary = "feedback_scores_number",
   cost = "cost",
+  guardrails = "guardrails",
 }
 
 export enum DYNAMIC_COLUMN_TYPE {
@@ -40,11 +46,18 @@ export enum DYNAMIC_COLUMN_TYPE {
   null = "null",
 }
 
-export enum CUSTOM_HEADER_ICON {
-  GUARDRAILS = "guardrails",
-}
+type explainerType = "info" | "help";
 
-export type HeaderIconType = COLUMN_TYPE | CUSTOM_HEADER_ICON;
+export type Explainer = {
+  id: string;
+  title?: string;
+  type?: explainerType;
+  description: string;
+  docLink?: string;
+  docHash?: string;
+};
+
+export type HeaderIconType = COLUMN_TYPE;
 
 export type ColumnData<T> = {
   id: string;
@@ -57,12 +70,14 @@ export type ColumnData<T> = {
   iconType?: HeaderIconType;
   header?: Header<T, unknown>;
   headerCheckbox?: boolean;
+  explainer?: Explainer;
   cell?: Cell<T, unknown>;
   verticalAlignment?: CELL_VERTICAL_ALIGNMENT;
   overrideRowHeight?: ROW_HEIGHT;
   statisticKey?: string;
   statisticDataFormater?: (value: number) => string;
   sortable?: boolean;
+  disposable?: boolean;
 };
 
 export type DynamicColumn = {
@@ -137,7 +152,7 @@ export interface UsageData {
   total_tokens: number;
 }
 
-export interface AverageFeedbackScore {
+export interface AggregatedFeedbackScore {
   name: string;
   value: number;
 }

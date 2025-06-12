@@ -18,10 +18,12 @@ import {
   COLUMN_COMMENTS_ID,
   COLUMN_CREATED_AT_ID,
   COLUMN_ID_ID,
+  COLUMN_FEEDBACK_SCORES_ID,
 } from "@/types/shared";
-
-export const EXPERIMENT_ITEM_FEEDBACK_SCORES_PREFIX = "feedback_scores";
-export const EXPERIMENT_ITEM_OUTPUT_PREFIX = "output";
+import { EXPERIMENT_ITEM_OUTPUT_PREFIX } from "@/constants/experiments";
+import ExplainerIcon from "@/components/shared/ExplainerIcon/ExplainerIcon";
+import { EXPLAINER_ID, EXPLAINERS_MAP } from "@/constants/explainers";
+import { Separator } from "@/components/ui/separator";
 
 const EVALUATION_EXPORT_COLUMNS = [
   EXPERIMENT_ITEM_OUTPUT_PREFIX,
@@ -38,7 +40,7 @@ const processNestedExportColumn = (
   const keys = column.split(".");
   const prefixColumnKey = first(keys) as string;
 
-  if (prefixColumnKey === EXPERIMENT_ITEM_FEEDBACK_SCORES_PREFIX) {
+  if (prefixColumnKey === COLUMN_FEEDBACK_SCORES_ID) {
     const scoreName = column.replace(`${prefixColumnKey}.`, "");
     const scoreObject = item.feedback_scores?.find((f) => f.name === scoreName);
     accumulator[`${prefix}${column}`] = get(scoreObject, "value", "-");
@@ -104,7 +106,7 @@ const CompareExperimentsActionsPanel: React.FC<
           const prefix = first(column.split(".")) as string;
           const isDatasetColumn = !(
             EVALUATION_EXPORT_COLUMNS.includes(prefix) ||
-            prefix === EXPERIMENT_ITEM_FEEDBACK_SCORES_PREFIX
+            prefix === COLUMN_FEEDBACK_SCORES_ID
           );
 
           if (isDatasetColumn) {
@@ -150,19 +152,28 @@ const CompareExperimentsActionsPanel: React.FC<
         open={open}
         setOpen={setOpen}
       />
-      <TooltipWrapper content="Compare experiments">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setOpen(true);
-            resetKeyRef.current = resetKeyRef.current + 1;
-          }}
-        >
-          <Split className="mr-2 size-3.5" />
-          Compare
-        </Button>
-      </TooltipWrapper>
+      <div className="inline-flex items-center gap-2">
+        <TooltipWrapper content="Compare experiments">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setOpen(true);
+              resetKeyRef.current = resetKeyRef.current + 1;
+            }}
+          >
+            <Split className="mr-2 size-3.5" />
+            Compare
+          </Button>
+        </TooltipWrapper>
+        <ExplainerIcon
+          className="-ml-0.5"
+          {...EXPLAINERS_MAP[
+            EXPLAINER_ID.what_does_it_mean_to_compare_my_experiments
+          ]}
+        />
+        <Separator orientation="vertical" className="mx-2 h-4" />
+      </div>
       {columnsToExport && (
         <ExportToButton
           disabled={disabled || columnsToExport.length === 0}

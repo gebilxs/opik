@@ -13,6 +13,11 @@ export enum FEEDBACK_SCORE_TYPE {
   online_scoring = "online_scoring",
 }
 
+export enum TRACE_VISIBILITY_MODE {
+  default = "default",
+  hidden = "hidden",
+}
+
 export interface TraceFeedbackScore {
   category_name?: string;
   reason?: string;
@@ -46,14 +51,16 @@ export interface BaseTraceData {
   usage?: UsageData;
   total_estimated_cost?: number;
   error_info?: BaseTraceDataErrorInfo;
-  guardrail_validations?: GuardrailValidation[];
+  guardrails_validations?: GuardrailValidation[];
 }
 
 export interface Trace extends BaseTraceData {
   span_count?: number;
+  llm_span_count?: number;
   thread_id?: string;
   project_id: string;
   workspace_name?: string;
+  visibility_mode?: TRACE_VISIBILITY_MODE;
 }
 
 export enum SPAN_TYPE {
@@ -87,6 +94,8 @@ export interface Thread {
   first_message: object;
   last_message: object;
   number_of_messages: number;
+  usage?: UsageData;
+  total_estimated_cost?: number;
   last_updated_at: string;
   created_by: string;
   created_at: string;

@@ -9,12 +9,16 @@ export interface ExperimentItemCompare {
     experimentId: string;
     datasetItemId: string;
     traceId: string;
-    input?: OpikApi.JsonNodeCompare;
-    output?: OpikApi.JsonNodeCompare;
+    input?: OpikApi.JsonListStringCompare;
+    output?: OpikApi.JsonListStringCompare;
     feedbackScores?: OpikApi.FeedbackScoreCompare[];
     comments?: OpikApi.CommentCompare[];
+    totalEstimatedCost?: number;
+    duration?: number;
+    usage?: Record<string, number>;
     createdAt?: Date;
     lastUpdatedAt?: Date;
     createdBy?: string;
     lastUpdatedBy?: string;
+    traceVisibilityMode?: OpikApi.ExperimentItemCompareTraceVisibilityMode;
 }

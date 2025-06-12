@@ -10,8 +10,11 @@ export interface FindExperimentsRequest {
     page?: number;
     size?: number;
     datasetId?: string;
+    optimizationId?: string;
+    types?: string;
     name?: string;
     datasetDeleted?: boolean;
     promptId?: string;
     sorting?: string;
+    filters?: string;
 }

@@ -56,6 +56,8 @@ tags:
   description: LLM Provider Key
 - name: OpenTelemetry Ingestion
   description: Resource to ingest Traces and Spans via OpenTelemetry
+- name: Optimizations
+  description: Optimization resources
 - name: Projects
   description: Project related resources
 - name: Prompts
@@ -670,6 +672,10 @@ paths:
         in: query
         schema:
           type: boolean
+      - name: with_optimizations_only
+        in: query
+        schema:
+          type: boolean
       - name: prompt_id
         in: query
         schema:
@@ -1035,6 +1041,15 @@ paths:
         schema:
           type: string
           format: uuid
+      - name: optimization_id
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: types
+        in: query
+        schema:
+          type: string
       - name: name
         in: query
         schema:
@@ -1049,6 +1064,10 @@ paths:
           type: string
           format: uuid
       - name: sorting
+        in: query
+        schema:
+          type: string
+      - name: filters
         in: query
         schema:
           type: string
@@ -1127,10 +1146,38 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ExperimentsDelete"
+              $ref: "#/components/schemas/DeleteIdsHolder"
       responses:
         "204":
           description: No content
+  /v1/private/experiments/items/bulk:
+    put:
+      tags:
+      - Experiments
+      summary: Record experiment items in bulk
+      description: "Record experiment items in bulk with traces, spans, and feedback\
+        \ scores. Maximum request size is 4MB."
+      operationId: experimentItemsBulk
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExperimentItemBulkUpload_ExperimentItemBulkWriteView"
+      responses:
+        "204":
+          description: No content
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "422":
+          description: Unprocessable Content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
   /v1/private/experiments/feedback-scores/names:
     get:
       tags:
@@ -1406,14 +1453,14 @@ paths:
     post:
       tags:
       - Guardrails
-      summary: Batch guardrails for traces
+      summary: Create guardrails for traces in a batch
       description: Batch guardrails for traces
-      operationId: addGuardrailsBatch
+      operationId: createGuardrails
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GuardrailBatch"
+              $ref: "#/components/schemas/GuardrailBatch_Write"
       responses:
         "204":
           description: No Content
@@ -1560,6 +1607,159 @@ paths:
           description: default response
           content:
             '*/*': {}
+  /v1/private/optimizations:
+    get:
+      tags:
+      - Optimizations
+      summary: Find optimizations
+      description: Find optimizations
+      operationId: findOptimizations
+      parameters:
+      - name: page
+        in: query
+        schema:
+          minimum: 1
+          type: integer
+          format: int32
+          default: 1
+      - name: size
+        in: query
+        schema:
+          minimum: 1
+          type: integer
+          format: int32
+          default: 10
+      - name: dataset_id
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: name
+        in: query
+        schema:
+          type: string
+      - name: dataset_deleted
+        in: query
+        schema:
+          type: boolean
+      responses:
+        "200":
+          description: Optimizations resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OptimizationPage_Public"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage_Public"
+    put:
+      tags:
+      - Optimizations
+      summary: Upsert optimization
+      description: Upsert optimization
+      operationId: upsertOptimization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Optimization_Write"
+      responses:
+        "201":
+          description: Created
+          headers:
+            Location:
+              required: true
+              style: simple
+              schema:
+                type: string
+              example: "${basePath}/v1/private/optimizations/{id}"
+    post:
+      tags:
+      - Optimizations
+      summary: Create optimization
+      description: Create optimization
+      operationId: createOptimization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Optimization_Write"
+      responses:
+        "201":
+          description: Created
+          headers:
+            Location:
+              required: true
+              style: simple
+              schema:
+                type: string
+              example: "${basePath}/v1/private/optimizations/{id}"
+  /v1/private/optimizations/delete:
+    post:
+      tags:
+      - Optimizations
+      summary: Delete optimizations by id
+      description: Delete optimizations by id
+      operationId: deleteOptimizationsById
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteIdsHolder"
+      responses:
+        "204":
+          description: No content
+  /v1/private/optimizations/{id}:
+    get:
+      tags:
+      - Optimizations
+      summary: Get optimization by id
+      description: Get optimization by id
+      operationId: getOptimizationById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Optimization resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Optimization_Public"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorMessage_Public"
+    put:
+      tags:
+      - Optimizations
+      summary: Update optimization by id
+      description: Update optimization by id
+      operationId: updateOptimizationsById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OptimizationUpdate"
+      responses:
+        "204":
+          description: No content
   /v1/private/projects:
     get:
       tags:
@@ -2288,6 +2488,10 @@ paths:
         in: query
         schema:
           type: string
+      - name: exclude
+        in: query
+        schema:
+          type: string
       responses:
         "200":
           description: Spans resource
@@ -2712,6 +2916,10 @@ paths:
         in: query
         schema:
           type: string
+      - name: exclude
+        in: query
+        schema:
+          type: string
       responses:
         "200":
           description: Trace resource
@@ -3028,6 +3236,10 @@ paths:
         in: query
         schema:
           type: string
+      - name: sorting
+        in: query
+        schema:
+          type: string
       responses:
         "200":
           description: Trace threads resource
@@ -3164,6 +3376,50 @@ paths:
           type: string
           format: uuid
       - name: experiment_id
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: workspace_name
+        in: query
+        schema:
+          type: string
+      - name: path
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "303":
+          description: Redirect
+        "400":
+          description: Bad Request
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+        "404":
+          description: Not Found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ErrorMessage"
+  /v1/session/redirect/optimizations:
+    get:
+      tags:
+      - Redirect
+      summary: Create optimization redirect url
+      description: Create optimization redirect url
+      operationId: optimizationsRedirect
+      parameters:
+      - name: dataset_id
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: optimization_id
         in: query
         required: true
         schema:
@@ -3577,6 +3833,7 @@ components:
           - USER
           - AI
           - TOOL_EXECUTION_RESULT
+          - CUSTOM
         content:
           type: string
     LlmAsJudgeModelParameters:
@@ -3706,6 +3963,7 @@ components:
           - USER
           - AI
           - TOOL_EXECUTION_RESULT
+          - CUSTOM
         content:
           type: string
     LlmAsJudgeModelParameters_Write:
@@ -3885,6 +4143,7 @@ components:
           - USER
           - AI
           - TOOL_EXECUTION_RESULT
+          - CUSTOM
         content:
           type: string
     LlmAsJudgeModelParameters_Public:
@@ -4112,7 +4371,7 @@ components:
           type: string
         created:
           type: integer
-          format: int32
+          format: int64
         model:
           type: string
         choices:
@@ -4122,6 +4381,8 @@ components:
         usage:
           $ref: "#/components/schemas/Usage"
         system_fingerprint:
+          type: string
+        service_tier:
           type: string
     CompletionTokensDetails:
       type: object
@@ -4134,12 +4395,6 @@ components:
       properties:
         role:
           type: string
-          enum:
-          - system
-          - user
-          - assistant
-          - tool
-          - function
         content:
           type: string
         tool_calls:
@@ -4155,6 +4410,12 @@ components:
           type: string
         arguments:
           type: string
+    PromptTokensDetails:
+      type: object
+      properties:
+        cached_tokens:
+          type: integer
+          format: int32
     ToolCall:
       type: object
       properties:
@@ -4178,6 +4439,8 @@ components:
         prompt_tokens:
           type: integer
           format: int32
+        prompt_tokens_details:
+          $ref: "#/components/schemas/PromptTokensDetails"
         completion_tokens:
           type: integer
           format: int32
@@ -4241,6 +4504,16 @@ components:
           type: object
         parallel_tool_calls:
           type: boolean
+        store:
+          type: boolean
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        reasoning_effort:
+          type: string
+        service_tier:
+          type: string
         functions:
           type: array
           items:
@@ -4257,28 +4530,9 @@ components:
         strict:
           type: boolean
         parameters:
-          $ref: "#/components/schemas/JsonObjectSchema"
-    JsonObjectSchema:
-      type: object
-      properties:
-        type:
-          type: string
-        description:
-          type: string
-        properties:
           type: object
           additionalProperties:
-            $ref: "#/components/schemas/JsonSchemaElement"
-        required:
-          type: array
-          items:
-            type: string
-        additionalProperties:
-          type: boolean
-        $defs:
-          type: object
-          additionalProperties:
-            $ref: "#/components/schemas/JsonSchemaElement"
+            type: object
     JsonSchema:
       type: object
       properties:
@@ -4287,12 +4541,9 @@ components:
         strict:
           type: boolean
         schema:
-          $ref: "#/components/schemas/JsonObjectSchema"
-    JsonSchemaElement:
-      type: object
-      properties:
-        type:
-          type: string
+          type: object
+          additionalProperties:
+            type: object
     Message:
       type: object
     ResponseFormat:
@@ -4330,6 +4581,11 @@ components:
           format: uuid
         name:
           type: string
+        visibility:
+          type: string
+          enum:
+          - private
+          - public
         description:
           pattern: (?s)^\s*(\S.*\S|\S)\s*$
           type: string
@@ -4355,11 +4611,23 @@ components:
           type: integer
           format: int64
           readOnly: true
+        optimization_count:
+          type: integer
+          format: int64
+          readOnly: true
         most_recent_experiment_at:
           type: string
           format: date-time
           readOnly: true
         last_created_experiment_at:
+          type: string
+          format: date-time
+          readOnly: true
+        most_recent_optimization_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_created_optimization_at:
           type: string
           format: date-time
           readOnly: true
@@ -4373,6 +4641,11 @@ components:
           format: uuid
         name:
           type: string
+        visibility:
+          type: string
+          enum:
+          - private
+          - public
         description:
           pattern: (?s)^\s*(\S.*\S|\S)\s*$
           type: string
@@ -4430,6 +4703,10 @@ components:
           readOnly: true
           items:
             $ref: "#/components/schemas/ExperimentItem"
+        dataset_id:
+          type: string
+          format: uuid
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -4483,9 +4760,9 @@ components:
           type: string
           format: uuid
         input:
-          $ref: "#/components/schemas/JsonNode"
+          $ref: "#/components/schemas/JsonListString"
         output:
-          $ref: "#/components/schemas/JsonNode"
+          $ref: "#/components/schemas/JsonListString"
         feedback_scores:
           type: array
           readOnly: true
@@ -4496,6 +4773,20 @@ components:
           readOnly: true
           items:
             $ref: "#/components/schemas/Comment"
+        total_estimated_cost:
+          type: number
+          readOnly: true
+        duration:
+          type: number
+          format: double
+          readOnly: true
+        usage:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+            readOnly: true
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -4510,6 +4801,12 @@ components:
         last_updated_by:
           type: string
           readOnly: true
+        trace_visibility_mode:
+          type: string
+          readOnly: true
+          enum:
+          - default
+          - hidden
     FeedbackScore:
       required:
       - name
@@ -4550,8 +4847,14 @@ components:
           type: string
           readOnly: true
       readOnly: true
-    JsonNode:
+    JsonListString:
       type: object
+      anyOf:
+      - type: object
+      - type: array
+        items:
+          type: object
+      - type: string
     DatasetItemBatch_Write:
       required:
       - items
@@ -4713,6 +5016,10 @@ components:
           readOnly: true
           items:
             $ref: "#/components/schemas/ExperimentItem_Compare"
+        dataset_id:
+          type: string
+          format: uuid
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -4747,9 +5054,9 @@ components:
           type: string
           format: uuid
         input:
-          $ref: "#/components/schemas/JsonNode_Compare"
+          $ref: "#/components/schemas/JsonListString_Compare"
         output:
-          $ref: "#/components/schemas/JsonNode_Compare"
+          $ref: "#/components/schemas/JsonListString_Compare"
         feedback_scores:
           type: array
           readOnly: true
@@ -4760,6 +5067,20 @@ components:
           readOnly: true
           items:
             $ref: "#/components/schemas/Comment_Compare"
+        total_estimated_cost:
+          type: number
+          readOnly: true
+        duration:
+          type: number
+          format: double
+          readOnly: true
+        usage:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+            readOnly: true
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -4774,6 +5095,12 @@ components:
         last_updated_by:
           type: string
           readOnly: true
+        trace_visibility_mode:
+          type: string
+          readOnly: true
+          enum:
+          - default
+          - hidden
       readOnly: true
     FeedbackScore_Compare:
       required:
@@ -4815,9 +5142,15 @@ components:
           type: string
           readOnly: true
       readOnly: true
-    JsonNode_Compare:
+    JsonListString_Compare:
       type: object
       readOnly: true
+      anyOf:
+      - type: object
+      - type: array
+        items:
+          type: object
+      - type: string
     DatasetPage_Public:
       type: object
       properties:
@@ -4844,6 +5177,11 @@ components:
           format: uuid
         name:
           type: string
+        visibility:
+          type: string
+          enum:
+          - private
+          - public
         description:
           pattern: (?s)^\s*(\S.*\S|\S)\s*$
           type: string
@@ -4869,11 +5207,23 @@ components:
           type: integer
           format: int64
           readOnly: true
+        optimization_count:
+          type: integer
+          format: int64
+          readOnly: true
         most_recent_experiment_at:
           type: string
           format: date-time
           readOnly: true
         last_created_experiment_at:
+          type: string
+          format: date-time
+          readOnly: true
+        most_recent_optimization_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_created_optimization_at:
           type: string
           format: date-time
           readOnly: true
@@ -4913,6 +5263,10 @@ components:
           readOnly: true
           items:
             $ref: "#/components/schemas/ExperimentItem_Public"
+        dataset_id:
+          type: string
+          format: uuid
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -4960,6 +5314,12 @@ components:
         last_updated_by:
           type: string
           readOnly: true
+        trace_visibility_mode:
+          type: string
+          readOnly: true
+          enum:
+          - default
+          - hidden
     Column_Public:
       type: object
       properties:
@@ -5069,6 +5429,11 @@ components:
         description:
           pattern: (?s)^\s*(\S.*\S|\S)\s*$
           type: string
+        visibility:
+          type: string
+          enum:
+          - private
+          - public
     Experiment:
       required:
       - dataset_name
@@ -5087,6 +5452,15 @@ components:
           type: string
         metadata:
           $ref: "#/components/schemas/JsonNode"
+        type:
+          type: string
+          enum:
+          - regular
+          - trial
+          - mini-batch
+        optimization_id:
+          type: string
+          format: uuid
         feedback_scores:
           type: array
           readOnly: true
@@ -5104,6 +5478,21 @@ components:
         created_at:
           type: string
           format: date-time
+          readOnly: true
+        duration:
+          $ref: "#/components/schemas/PercentageValues"
+        total_estimated_cost:
+          type: number
+          readOnly: true
+        total_estimated_cost_avg:
+          type: number
+          readOnly: true
+        usage:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+            readOnly: true
           readOnly: true
         last_updated_at:
           type: string
@@ -5130,6 +5519,17 @@ components:
         name:
           type: string
         value:
+          type: number
+    JsonNode:
+      type: object
+    PercentageValues:
+      type: object
+      properties:
+        p50:
+          type: number
+        p90:
+          type: number
+        p99:
           type: number
     PromptVersionLink:
       required:
@@ -5160,6 +5560,15 @@ components:
           type: string
         metadata:
           $ref: "#/components/schemas/JsonNode_Write"
+        type:
+          type: string
+          enum:
+          - regular
+          - trial
+          - mini-batch
+        optimization_id:
+          type: string
+          format: uuid
         prompt_version:
           $ref: "#/components/schemas/PromptVersionLink_Write"
         prompt_versions:
@@ -5201,7 +5610,7 @@ components:
           items:
             type: string
             format: uuid
-    ExperimentsDelete:
+    DeleteIdsHolder:
       required:
       - ids
       type: object
@@ -5214,6 +5623,474 @@ components:
           items:
             type: string
             format: uuid
+    Check:
+      type: object
+      properties:
+        name:
+          type: string
+          enum:
+          - TOPIC
+          - PII
+        result:
+          type: string
+          enum:
+          - passed
+          - failed
+    ErrorInfo:
+      required:
+      - exception_type
+      - traceback
+      type: object
+      properties:
+        exception_type:
+          type: string
+        message:
+          type: string
+        traceback:
+          type: string
+    ExperimentItemBulkRecord:
+      required:
+      - dataset_item_id
+      type: object
+      properties:
+        dataset_item_id:
+          type: string
+          format: uuid
+        evaluate_task_result:
+          $ref: "#/components/schemas/JsonListString"
+        trace:
+          $ref: "#/components/schemas/Trace"
+        spans:
+          maxItems: 100
+          minItems: 0
+          type: array
+          items:
+            $ref: "#/components/schemas/Span"
+        feedback_scores:
+          maxItems: 100
+          minItems: 0
+          type: array
+          items:
+            $ref: "#/components/schemas/FeedbackScore"
+    ExperimentItemBulkUpload:
+      required:
+      - dataset_name
+      - experiment_name
+      - items
+      type: object
+      properties:
+        experiment_name:
+          type: string
+        dataset_name:
+          type: string
+        items:
+          maxItems: 250
+          minItems: 1
+          type: array
+          items:
+            $ref: "#/components/schemas/ExperimentItemBulkRecord"
+    GuardrailsValidation:
+      type: object
+      properties:
+        span_id:
+          type: string
+          format: uuid
+        checks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Check"
+      readOnly: true
+    Span:
+      required:
+      - start_time
+      - trace_id
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_name:
+          pattern: (?s)^\s*(\S.*\S|\S)\s*$
+          type: string
+          description: "If null, the default project is used"
+        project_id:
+          type: string
+          format: uuid
+          readOnly: true
+        trace_id:
+          type: string
+          format: uuid
+        parent_span_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+          - general
+          - tool
+          - llm
+          - guardrail
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        input:
+          $ref: "#/components/schemas/JsonListString"
+        output:
+          $ref: "#/components/schemas/JsonListString"
+        metadata:
+          $ref: "#/components/schemas/JsonNode"
+        model:
+          type: string
+        provider:
+          type: string
+        tags:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+        usage:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int32
+        error_info:
+          $ref: "#/components/schemas/ErrorInfo"
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_updated_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          readOnly: true
+        last_updated_by:
+          type: string
+          readOnly: true
+        feedback_scores:
+          type: array
+          readOnly: true
+          items:
+            $ref: "#/components/schemas/FeedbackScore"
+        comments:
+          type: array
+          readOnly: true
+          items:
+            $ref: "#/components/schemas/Comment"
+        total_estimated_cost:
+          minimum: 0.0
+          exclusiveMinimum: false
+          type: number
+        total_estimated_cost_version:
+          type: string
+        duration:
+          type: number
+          description: Duration in milliseconds as a decimal number to support sub-millisecond
+            precision
+          format: double
+          readOnly: true
+    Trace:
+      required:
+      - start_time
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_name:
+          pattern: (?s)^\s*(\S.*\S|\S)\s*$
+          type: string
+          description: "If null, the default project is used"
+        project_id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        input:
+          $ref: "#/components/schemas/JsonListString"
+        output:
+          $ref: "#/components/schemas/JsonListString"
+        metadata:
+          $ref: "#/components/schemas/JsonNode"
+        tags:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+        error_info:
+          $ref: "#/components/schemas/ErrorInfo"
+        usage:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+            readOnly: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_updated_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          readOnly: true
+        last_updated_by:
+          type: string
+          readOnly: true
+        feedback_scores:
+          type: array
+          readOnly: true
+          items:
+            $ref: "#/components/schemas/FeedbackScore"
+        comments:
+          type: array
+          readOnly: true
+          items:
+            $ref: "#/components/schemas/Comment"
+        guardrails_validations:
+          type: array
+          readOnly: true
+          items:
+            $ref: "#/components/schemas/GuardrailsValidation"
+        total_estimated_cost:
+          type: number
+          readOnly: true
+        span_count:
+          type: integer
+          format: int32
+          readOnly: true
+        duration:
+          type: number
+          description: Duration in milliseconds as a decimal number to support sub-millisecond
+            precision
+          format: double
+          readOnly: true
+        thread_id:
+          type: string
+        visibility_mode:
+          type: string
+          readOnly: true
+          enum:
+          - default
+          - hidden
+        llm_span_count:
+          type: integer
+          format: int32
+          readOnly: true
+    ErrorInfo_ExperimentItemBulkWriteView:
+      required:
+      - exception_type
+      - traceback
+      type: object
+      properties:
+        exception_type:
+          type: string
+        message:
+          type: string
+        traceback:
+          type: string
+    ExperimentItemBulkRecord_ExperimentItemBulkWriteView:
+      required:
+      - dataset_item_id
+      type: object
+      properties:
+        dataset_item_id:
+          type: string
+          format: uuid
+        evaluate_task_result:
+          $ref: "#/components/schemas/JsonListString_ExperimentItemBulkWriteView"
+        trace:
+          $ref: "#/components/schemas/Trace_ExperimentItemBulkWriteView"
+        spans:
+          maxItems: 100
+          minItems: 0
+          type: array
+          items:
+            $ref: "#/components/schemas/Span_ExperimentItemBulkWriteView"
+        feedback_scores:
+          maxItems: 100
+          minItems: 0
+          type: array
+          items:
+            $ref: "#/components/schemas/FeedbackScore_ExperimentItemBulkWriteView"
+    ExperimentItemBulkUpload_ExperimentItemBulkWriteView:
+      required:
+      - dataset_name
+      - experiment_name
+      - items
+      type: object
+      properties:
+        experiment_name:
+          type: string
+        dataset_name:
+          type: string
+        items:
+          maxItems: 250
+          minItems: 1
+          type: array
+          items:
+            $ref: "#/components/schemas/ExperimentItemBulkRecord_ExperimentItemBulkWriteView"
+    FeedbackScore_ExperimentItemBulkWriteView:
+      required:
+      - name
+      - source
+      - value
+      type: object
+      properties:
+        name:
+          type: string
+        category_name:
+          type: string
+        value:
+          maximum: 999999999.999999999
+          exclusiveMaximum: false
+          minimum: -999999999.999999999
+          exclusiveMinimum: false
+          type: number
+        reason:
+          type: string
+        source:
+          type: string
+          enum:
+          - ui
+          - sdk
+          - online_scoring
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          readOnly: true
+        last_updated_by:
+          type: string
+          readOnly: true
+    JsonListString_ExperimentItemBulkWriteView:
+      type: object
+      anyOf:
+      - type: object
+      - type: array
+        items:
+          type: object
+      - type: string
+    JsonNode_ExperimentItemBulkWriteView:
+      type: object
+    Span_ExperimentItemBulkWriteView:
+      required:
+      - start_time
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        parent_span_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+          - general
+          - tool
+          - llm
+          - guardrail
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        input:
+          $ref: "#/components/schemas/JsonListString_ExperimentItemBulkWriteView"
+        output:
+          $ref: "#/components/schemas/JsonListString_ExperimentItemBulkWriteView"
+        metadata:
+          $ref: "#/components/schemas/JsonNode_ExperimentItemBulkWriteView"
+        model:
+          type: string
+        provider:
+          type: string
+        tags:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+        usage:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int32
+        error_info:
+          $ref: "#/components/schemas/ErrorInfo_ExperimentItemBulkWriteView"
+        last_updated_at:
+          type: string
+          format: date-time
+        total_estimated_cost:
+          minimum: 0.0
+          exclusiveMinimum: false
+          type: number
+        total_estimated_cost_version:
+          type: string
+    Trace_ExperimentItemBulkWriteView:
+      required:
+      - start_time
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_name:
+          pattern: (?s)^\s*(\S.*\S|\S)\s*$
+          type: string
+          description: "If null, the default project is used"
+        name:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        input:
+          $ref: "#/components/schemas/JsonListString_ExperimentItemBulkWriteView"
+        output:
+          $ref: "#/components/schemas/JsonListString_ExperimentItemBulkWriteView"
+        metadata:
+          $ref: "#/components/schemas/JsonNode_ExperimentItemBulkWriteView"
+        tags:
+          uniqueItems: true
+          type: array
+          items:
+            type: string
+        error_info:
+          $ref: "#/components/schemas/ErrorInfo_ExperimentItemBulkWriteView"
+        last_updated_at:
+          type: string
+          format: date-time
+        thread_id:
+          type: string
+      description: "Please provide either none, only one of evaluate_task_result or\
+        \ trace, but never both"
     Comment_Public:
       required:
       - text
@@ -5278,6 +6155,15 @@ components:
           type: string
         metadata:
           $ref: "#/components/schemas/JsonNode_Public"
+        type:
+          type: string
+          enum:
+          - regular
+          - trial
+          - mini-batch
+        optimization_id:
+          type: string
+          format: uuid
         feedback_scores:
           type: array
           readOnly: true
@@ -5295,6 +6181,21 @@ components:
         created_at:
           type: string
           format: date-time
+          readOnly: true
+        duration:
+          $ref: "#/components/schemas/PercentageValues_Public"
+        total_estimated_cost:
+          type: number
+          readOnly: true
+        total_estimated_cost_avg:
+          type: number
+          readOnly: true
+        usage:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+            readOnly: true
           readOnly: true
         last_updated_at:
           type: string
@@ -5325,6 +6226,15 @@ components:
       readOnly: true
     JsonNode_Public:
       type: object
+    PercentageValues_Public:
+      type: object
+      properties:
+        p50:
+          type: number
+        p90:
+          type: number
+        p99:
+          type: number
     PromptVersionLink_Public:
       required:
       - id
@@ -5794,18 +6704,7 @@ components:
           type: number
         min:
           type: number
-    GuardrailBatch:
-      required:
-      - guardrails
-      type: object
-      properties:
-        guardrails:
-          maxItems: 1000
-          minItems: 1
-          type: array
-          items:
-            $ref: "#/components/schemas/GuardrailBatchItem"
-    GuardrailBatchItem:
+    Guardrail:
       required:
       - config
       - details
@@ -5818,6 +6717,63 @@ components:
         id:
           type: string
           format: uuid
+          readOnly: true
+        entity_id:
+          type: string
+          format: uuid
+        secondary_id:
+          type: string
+          format: uuid
+        project_name:
+          pattern: (?s)^\s*(\S.*\S|\S)\s*$
+          type: string
+          description: "If null, the default project is used"
+        name:
+          type: string
+          enum:
+          - TOPIC
+          - PII
+        result:
+          type: string
+          enum:
+          - passed
+          - failed
+        config:
+          $ref: "#/components/schemas/JsonNode"
+        details:
+          $ref: "#/components/schemas/JsonNode"
+    GuardrailBatch:
+      required:
+      - guardrails
+      type: object
+      properties:
+        guardrails:
+          maxItems: 1000
+          minItems: 1
+          type: array
+          items:
+            $ref: "#/components/schemas/Guardrail"
+    GuardrailBatch_Write:
+      required:
+      - guardrails
+      type: object
+      properties:
+        guardrails:
+          maxItems: 1000
+          minItems: 1
+          type: array
+          items:
+            $ref: "#/components/schemas/Guardrail_Write"
+    Guardrail_Write:
+      required:
+      - config
+      - details
+      - entity_id
+      - name
+      - result
+      - secondary_id
+      type: object
+      properties:
         entity_id:
           type: string
           format: uuid
@@ -5876,11 +6832,23 @@ components:
           - anthropic
           - gemini
           - openrouter
+          - vertex-ai
         api_key:
           type: string
         name:
           maxLength: 150
           minLength: 0
+          type: string
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        configuration:
+          type: object
+          additionalProperties:
+            type: string
+        base_url:
+          pattern: (?s)^\s*(\S.*\S|\S)\s*$
           type: string
         created_at:
           type: string
@@ -5913,11 +6881,23 @@ components:
           - anthropic
           - gemini
           - openrouter
+          - vertex-ai
         api_key:
           type: string
         name:
           maxLength: 150
           minLength: 0
+          type: string
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        configuration:
+          type: object
+          additionalProperties:
+            type: string
+        base_url:
+          pattern: (?s)^\s*(\S.*\S|\S)\s*$
           type: string
         created_at:
           type: string
@@ -5946,11 +6926,23 @@ components:
           - anthropic
           - gemini
           - openrouter
+          - vertex-ai
         api_key:
           type: string
         name:
           maxLength: 150
           minLength: 0
+          type: string
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        configuration:
+          type: object
+          additionalProperties:
+            type: string
+        base_url:
+          pattern: (?s)^\s*(\S.*\S|\S)\s*$
           type: string
     ProviderApiKeyUpdate:
       required:
@@ -5965,15 +6957,164 @@ components:
           type: string
     ExportTraceServiceRequest:
       $ref: "#/components/schemas/JsonNode"
-    PercentageValues:
+    Optimization:
+      required:
+      - dataset_name
+      - objective_name
+      - status
       type: object
       properties:
-        p50:
-          type: number
-        p90:
-          type: number
-        p99:
-          type: number
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        dataset_name:
+          type: string
+        objective_name:
+          type: string
+        status:
+          type: string
+          enum:
+          - running
+          - completed
+          - cancelled
+        metadata:
+          $ref: "#/components/schemas/JsonNode"
+        dataset_id:
+          type: string
+          format: uuid
+          readOnly: true
+        num_trials:
+          type: integer
+          format: int64
+          readOnly: true
+        feedback_scores:
+          type: array
+          readOnly: true
+          items:
+            $ref: "#/components/schemas/FeedbackScoreAverage"
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          readOnly: true
+        last_updated_at:
+          type: string
+          format: date-time
+        last_updated_by:
+          type: string
+          readOnly: true
+    Optimization_Write:
+      required:
+      - dataset_name
+      - objective_name
+      - status
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        dataset_name:
+          type: string
+        objective_name:
+          type: string
+        status:
+          type: string
+          enum:
+          - running
+          - completed
+          - cancelled
+        metadata:
+          $ref: "#/components/schemas/JsonNode_Write"
+        last_updated_at:
+          type: string
+          format: date-time
+    OptimizationPage_Public:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        total:
+          type: integer
+          format: int64
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/Optimization_Public"
+        sortableBy:
+          type: array
+          items:
+            type: string
+    Optimization_Public:
+      required:
+      - dataset_name
+      - objective_name
+      - status
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        dataset_name:
+          type: string
+        objective_name:
+          type: string
+        status:
+          type: string
+          enum:
+          - running
+          - completed
+          - cancelled
+        metadata:
+          $ref: "#/components/schemas/JsonNode_Public"
+        dataset_id:
+          type: string
+          format: uuid
+          readOnly: true
+        num_trials:
+          type: integer
+          format: int64
+          readOnly: true
+        feedback_scores:
+          type: array
+          readOnly: true
+          items:
+            $ref: "#/components/schemas/FeedbackScoreAverage_Public"
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          readOnly: true
+        last_updated_at:
+          type: string
+          format: date-time
+        last_updated_by:
+          type: string
+          readOnly: true
+    OptimizationUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+          - running
+          - completed
+          - cancelled
     Project:
       required:
       - name
@@ -6021,6 +7162,10 @@ components:
           type: number
           format: double
           readOnly: true
+        total_estimated_cost_sum:
+          type: number
+          format: double
+          readOnly: true
         usage:
           type: object
           additionalProperties:
@@ -6029,6 +7174,10 @@ components:
             readOnly: true
           readOnly: true
         trace_count:
+          type: integer
+          format: int64
+          readOnly: true
+        guardrails_failed_count:
           type: integer
           format: int64
           readOnly: true
@@ -6138,6 +7287,7 @@ components:
           - TOKEN_USAGE
           - DURATION
           - COST
+          - GUARDRAILS_FAILED_COUNT
         interval:
           type: string
           enum:
@@ -6168,6 +7318,7 @@ components:
           - TOKEN_USAGE
           - DURATION
           - COST
+          - GUARDRAILS_FAILED_COUNT
         interval:
           type: string
           enum:
@@ -6202,12 +7353,18 @@ components:
         total_estimated_cost:
           type: number
           format: double
+        total_estimated_cost_sum:
+          type: number
+          format: double
         usage:
           type: object
           additionalProperties:
             type: number
             format: double
         trace_count:
+          type: integer
+          format: int64
+        guardrails_failed_count:
           type: integer
           format: int64
     FeedbackScoreAverage_Detailed:
@@ -6278,6 +7435,10 @@ components:
           type: number
           format: double
           readOnly: true
+        total_estimated_cost_sum:
+          type: number
+          format: double
+          readOnly: true
         usage:
           type: object
           additionalProperties:
@@ -6286,6 +7447,10 @@ components:
             readOnly: true
           readOnly: true
         trace_count:
+          type: integer
+          format: int64
+          readOnly: true
+        guardrails_failed_count:
           type: integer
           format: int64
           readOnly: true
@@ -6648,121 +7813,14 @@ components:
           type: string
     ServiceTogglesConfig:
       required:
+      - guardrailsEnabled
       - pythonEvaluatorEnabled
       type: object
       properties:
         pythonEvaluatorEnabled:
           type: boolean
-    ErrorInfo:
-      required:
-      - exception_type
-      - traceback
-      type: object
-      properties:
-        exception_type:
-          type: string
-        message:
-          type: string
-        traceback:
-          type: string
-    Span:
-      required:
-      - name
-      - start_time
-      - trace_id
-      - type
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        project_name:
-          pattern: (?s)^\s*(\S.*\S|\S)\s*$
-          type: string
-          description: "If null, the default project is used"
-        project_id:
-          type: string
-          format: uuid
-          readOnly: true
-        trace_id:
-          type: string
-          format: uuid
-        parent_span_id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        type:
-          type: string
-          enum:
-          - general
-          - tool
-          - llm
-          - guardrail
-        start_time:
-          type: string
-          format: date-time
-        end_time:
-          type: string
-          format: date-time
-        input:
-          $ref: "#/components/schemas/JsonNode"
-        output:
-          $ref: "#/components/schemas/JsonNode"
-        metadata:
-          $ref: "#/components/schemas/JsonNode"
-        model:
-          type: string
-        provider:
-          type: string
-        tags:
-          uniqueItems: true
-          type: array
-          items:
-            type: string
-        usage:
-          type: object
-          additionalProperties:
-            type: integer
-            format: int32
-        error_info:
-          $ref: "#/components/schemas/ErrorInfo"
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-        last_updated_at:
-          type: string
-          format: date-time
-          readOnly: true
-        created_by:
-          type: string
-          readOnly: true
-        last_updated_by:
-          type: string
-          readOnly: true
-        feedback_scores:
-          type: array
-          readOnly: true
-          items:
-            $ref: "#/components/schemas/FeedbackScore"
-        comments:
-          type: array
-          readOnly: true
-          items:
-            $ref: "#/components/schemas/Comment"
-        total_estimated_cost:
-          minimum: 0.0
-          exclusiveMinimum: false
-          type: number
-        total_estimated_cost_version:
-          type: string
-        duration:
-          type: number
-          description: Duration in milliseconds as a decimal number to support sub-millisecond
-            precision
-          format: double
-          readOnly: true
+        guardrailsEnabled:
+          type: boolean
     ErrorInfo_Write:
       required:
       - exception_type
@@ -6775,12 +7833,18 @@ components:
           type: string
         traceback:
           type: string
+    JsonListString_Write:
+      type: object
+      anyOf:
+      - type: object
+      - type: array
+        items:
+          type: object
+      - type: string
     Span_Write:
       required:
-      - name
       - start_time
       - trace_id
-      - type
       type: object
       properties:
         id:
@@ -6812,9 +7876,9 @@ components:
           type: string
           format: date-time
         input:
-          $ref: "#/components/schemas/JsonNode_Write"
+          $ref: "#/components/schemas/JsonListString_Write"
         output:
-          $ref: "#/components/schemas/JsonNode_Write"
+          $ref: "#/components/schemas/JsonListString_Write"
         metadata:
           $ref: "#/components/schemas/JsonNode_Write"
         model:
@@ -6833,6 +7897,9 @@ components:
             format: int32
         error_info:
           $ref: "#/components/schemas/ErrorInfo_Write"
+        last_updated_at:
+          type: string
+          format: date-time
         total_estimated_cost:
           minimum: 0.0
           exclusiveMinimum: false
@@ -6920,12 +7987,18 @@ components:
           type: string
           readOnly: true
       readOnly: true
+    JsonListString_Public:
+      type: object
+      anyOf:
+      - type: object
+      - type: array
+        items:
+          type: object
+      - type: string
     Span_Public:
       required:
-      - name
       - start_time
       - trace_id
-      - type
       type: object
       properties:
         id:
@@ -6961,9 +8034,9 @@ components:
           type: string
           format: date-time
         input:
-          $ref: "#/components/schemas/JsonNode_Public"
+          $ref: "#/components/schemas/JsonListString_Public"
         output:
-          $ref: "#/components/schemas/JsonNode_Public"
+          $ref: "#/components/schemas/JsonListString_Public"
         metadata:
           $ref: "#/components/schemas/JsonNode_Public"
         model:
@@ -6989,7 +8062,6 @@ components:
         last_updated_at:
           type: string
           format: date-time
-          readOnly: true
         created_by:
           type: string
           readOnly: true
@@ -7064,15 +8136,6 @@ components:
         properties:
           value:
             $ref: "#/components/schemas/PercentageValues_Public"
-    PercentageValues_Public:
-      type: object
-      properties:
-        p50:
-          type: number
-        p90:
-          type: number
-        p99:
-          type: number
     ProjectStatItemObject_Public:
       type: object
       properties:
@@ -7221,13 +8284,22 @@ components:
         parent_span_id:
           type: string
           format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+          - general
+          - tool
+          - llm
+          - guardrail
         end_time:
           type: string
           format: date-time
         input:
-          $ref: "#/components/schemas/JsonNode"
+          $ref: "#/components/schemas/JsonListString"
         output:
-          $ref: "#/components/schemas/JsonNode"
+          $ref: "#/components/schemas/JsonListString"
         metadata:
           $ref: "#/components/schemas/JsonNode"
         model:
@@ -7250,122 +8322,8 @@ components:
           type: number
         error_info:
           $ref: "#/components/schemas/ErrorInfo"
-    Check:
-      type: object
-      properties:
-        name:
-          type: string
-          enum:
-          - TOPIC
-          - PII
-        result:
-          type: string
-          enum:
-          - passed
-          - failed
-    GuardrailsValidation:
-      type: object
-      properties:
-        span_id:
-          type: string
-          format: uuid
-        checks:
-          type: array
-          items:
-            $ref: "#/components/schemas/Check"
-      readOnly: true
-    Trace:
-      required:
-      - name
-      - start_time
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        project_name:
-          pattern: (?s)^\s*(\S.*\S|\S)\s*$
-          type: string
-          description: "If null, the default project is used"
-        project_id:
-          type: string
-          format: uuid
-          readOnly: true
-        name:
-          type: string
-        start_time:
-          type: string
-          format: date-time
-        end_time:
-          type: string
-          format: date-time
-        input:
-          $ref: "#/components/schemas/JsonNode"
-        output:
-          $ref: "#/components/schemas/JsonNode"
-        metadata:
-          $ref: "#/components/schemas/JsonNode"
-        tags:
-          uniqueItems: true
-          type: array
-          items:
-            type: string
-        error_info:
-          $ref: "#/components/schemas/ErrorInfo"
-        usage:
-          type: object
-          additionalProperties:
-            type: integer
-            format: int64
-            readOnly: true
-          readOnly: true
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-        last_updated_at:
-          type: string
-          format: date-time
-          readOnly: true
-        created_by:
-          type: string
-          readOnly: true
-        last_updated_by:
-          type: string
-          readOnly: true
-        feedback_scores:
-          type: array
-          readOnly: true
-          items:
-            $ref: "#/components/schemas/FeedbackScore"
-        comments:
-          type: array
-          readOnly: true
-          items:
-            $ref: "#/components/schemas/Comment"
-        guardrails_validations:
-          type: array
-          readOnly: true
-          items:
-            $ref: "#/components/schemas/GuardrailsValidation"
-        total_estimated_cost:
-          type: number
-          readOnly: true
-        span_count:
-          type: integer
-          format: int32
-          readOnly: true
-        duration:
-          type: number
-          description: Duration in milliseconds as a decimal number to support sub-millisecond
-            precision
-          format: double
-          readOnly: true
-        thread_id:
-          type: string
     Trace_Write:
       required:
-      - name
       - start_time
       type: object
       properties:
@@ -7385,9 +8343,9 @@ components:
           type: string
           format: date-time
         input:
-          $ref: "#/components/schemas/JsonNode_Write"
+          $ref: "#/components/schemas/JsonListString_Write"
         output:
-          $ref: "#/components/schemas/JsonNode_Write"
+          $ref: "#/components/schemas/JsonListString_Write"
         metadata:
           $ref: "#/components/schemas/JsonNode_Write"
         tags:
@@ -7397,6 +8355,9 @@ components:
             type: string
         error_info:
           $ref: "#/components/schemas/ErrorInfo_Write"
+        last_updated_at:
+          type: string
+          format: date-time
         thread_id:
           type: string
     TraceBatch:
@@ -7466,7 +8427,6 @@ components:
       readOnly: true
     Trace_Public:
       required:
-      - name
       - start_time
       type: object
       properties:
@@ -7486,9 +8446,9 @@ components:
           type: string
           format: date-time
         input:
-          $ref: "#/components/schemas/JsonNode_Public"
+          $ref: "#/components/schemas/JsonListString_Public"
         output:
-          $ref: "#/components/schemas/JsonNode_Public"
+          $ref: "#/components/schemas/JsonListString_Public"
         metadata:
           $ref: "#/components/schemas/JsonNode_Public"
         tags:
@@ -7512,7 +8472,6 @@ components:
         last_updated_at:
           type: string
           format: date-time
-          readOnly: true
         created_by:
           type: string
           readOnly: true
@@ -7549,6 +8508,16 @@ components:
           readOnly: true
         thread_id:
           type: string
+        visibility_mode:
+          type: string
+          readOnly: true
+          enum:
+          - default
+          - hidden
+        llm_span_count:
+          type: integer
+          format: int32
+          readOnly: true
     TraceThread:
       type: object
       properties:
@@ -7573,6 +8542,13 @@ components:
         number_of_messages:
           type: integer
           format: int64
+        total_estimated_cost:
+          type: number
+        usage:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
         last_updated_at:
           type: string
           format: date-time
@@ -7608,6 +8584,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TraceThread"
+        sortableBy:
+          type: array
+          items:
+            type: string
     TracePage_Public:
       type: object
       properties:
@@ -7690,13 +8670,15 @@ components:
           description: "If null and project_name not specified, Default Project is\
             \ assumed"
           format: uuid
+        name:
+          type: string
         end_time:
           type: string
           format: date-time
         input:
-          $ref: "#/components/schemas/JsonNode"
+          $ref: "#/components/schemas/JsonListString"
         output:
-          $ref: "#/components/schemas/JsonNode"
+          $ref: "#/components/schemas/JsonListString"
         metadata:
           $ref: "#/components/schemas/JsonNode"
         tags:

@@ -9,3 +9,5 @@ export type { Span } from "@/tracer/Span";
 export type { Trace } from "@/tracer/Trace";
 export type { SpanType } from "@/rest_api/api/types/SpanType";
 export { SpanType as OpikSpanType } from "@/rest_api/api/types/SpanType";
+export type { DatasetPublic } from "@/rest_api/api/types/DatasetPublic";
+export * from "./evaluation";

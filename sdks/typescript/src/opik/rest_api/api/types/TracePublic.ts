@@ -7,11 +7,11 @@ import * as OpikApi from "../index";
 export interface TracePublic {
     id?: string;
     projectId?: string;
-    name: string;
+    name?: string;
     startTime: Date;
     endTime?: Date;
-    input?: OpikApi.JsonNodePublic;
-    output?: OpikApi.JsonNodePublic;
+    input?: OpikApi.JsonListStringPublic;
+    output?: OpikApi.JsonListStringPublic;
     metadata?: OpikApi.JsonNodePublic;
     tags?: string[];
     errorInfo?: OpikApi.ErrorInfoPublic;
@@ -28,4 +28,6 @@ export interface TracePublic {
     /** Duration in milliseconds as a decimal number to support sub-millisecond precision */
     duration?: number;
     threadId?: string;
+    visibilityMode?: OpikApi.TracePublicVisibilityMode;
+    llmSpanCount?: number;
 }

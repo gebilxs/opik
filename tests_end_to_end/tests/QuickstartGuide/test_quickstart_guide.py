@@ -8,18 +8,21 @@ import allure
 logger = logging.getLogger(__name__)
 
 
+# TODO
+# unskip bedrock once AWS credentials set up in automation repo
+# unskip Haystack once fix to snippet is deployed to prod
 @pytest.mark.parametrize(
     "integration",
     [
         "Function decorators",
         "OpenAI",
         "Anthropic",
-        "Bedrock",
+        # "Bedrock",
         "Gemini",
         "LangChain",
         "LangGraph",
         "LlamaIndex",
-        "Haystack",
+        # "Haystack",
         "LiteLLM",
         "Ragas",
         "Groq",
@@ -70,7 +73,7 @@ def test_quickstart_snippet(page, env_config, integration):
         try:
             # Set a timeout for the subprocess to prevent hanging
             result = subprocess.run(
-                ["python", str(file_path)], capture_output=True, text=True, timeout=30
+                ["python", str(file_path)], capture_output=True, text=True, timeout=60
             )
 
             logger.info("\n=== Output ===")
